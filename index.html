@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ระบบเสนอราคาเบี้ยประกัน</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- โหลด html2pdf สำหรับแปลงหน้าเว็บเป็น PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
@@ -31,29 +32,32 @@
     <p class="text-gray-700">ข้อมูลของคุณอยู่ในระบบแล้ว กรุณารอแอดมินเปิดสิทธิ์การใช้งาน (Active)</p>
   </div>
 
-  <!-- 4. หน้าแอปพลิเคชันหลัก (สร้างใบเสนอราคา) -->
+  <!-- 4. หน้าแอปพลิเคชันหลัก (พื้นที่สำหรับออกใบเสนอราคาและพิมพ์ PDF) -->
   <div id="app-section" class="hidden max-w-4xl mx-auto bg-white p-6 rounded shadow mt-2">
     
-    <!-- Header -->
+    <!-- ส่วนหัวใบเสนอราคา -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4 gap-2">
-      <h2 class="text-2xl font-bold text-blue-800">สร้างใบเสนอราคา</h2>
+      <div>
+        <h2 class="text-2xl font-bold text-blue-800">ใบเสนอราคาประกันภัย</h2>
+        <p class="text-xs text-gray-500">วันที่นำเสนอ: <span id="current-date"></span></p>
+      </div>
       <span id="agent-info-display" class="text-sm text-gray-700 font-semibold bg-blue-50 px-3 py-1 rounded border border-blue-200"></span>
     </div>
     
-    <!-- Section 1: ข้อมูลลูกค้า -->
+    <!-- ข้อมูลลูกค้าและรถยนต์ -->
     <div class="mb-6 p-4 bg-gray-50 rounded border">
       <h3 class="font-bold mb-3 text-gray-800">1. ข้อมูลลูกค้าและรถยนต์</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <input type="text" id="cust-name" placeholder="ชื่อผู้เอาประกันภัย" class="border p-2 rounded w-full">
         <input type="text" id="car-reg" placeholder="ทะเบียนรถ" class="border p-2 rounded w-full">
-        <input type="text" id="car-model" placeholder="ยี่ห้อ / รุ่น / ปีรถ" class="border p-2 rounded w-full md:col-span-2">
+        <input type="text" id="car-model" placeholder="ยี่ห้อ / รุ่นรถ" class="border p-2 rounded w-full">
       </div>
     </div>
 
-    <!-- Section 2: เลือกแบบประกันเพื่อเปรียบเทียบ -->
-    <div class="mb-6 p-4 bg-gray-50 rounded border">
+    <!-- เลือกบริษัทและเบี้ยประกันเพื่อเปรียบเทียบ -->
+    <div class="mb-6 p-4 bg-gray-50 rounded border no-print">
       <h3 class="font-bold mb-3 text-gray-800">2. เลือกบริษัทและเบี้ยประกัน</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
         <select id="ins-type" class="border p-2 rounded w-full">
           <option value="">-- ประเภท --</option>
           <option value="ป.1 ซ่อมห้าง">ป.1 ซ่อมห้าง</option>
@@ -73,15 +77,16 @@
         </select>
         
         <input type="number" id="ins-premium" placeholder="เบี้ยรวม (บาท)" class="border p-2 rounded w-full">
+        
+        <button onclick="addCompare()" class="bg-blue-600 text-white rounded p-2 font-semibold hover:bg-blue-700 transition">
+          + เพิ่มเปรียบเทียบ
+        </button>
       </div>
-      <button onclick="addCompare()" class="w-full bg-blue-600 text-white rounded p-2 font-semibold hover:bg-blue-700 transition">
-        + เพิ่มรายการเปรียบเทียบ
-      </button>
     </div>
 
-    <!-- Section 3: ตารางเปรียบเทียบ -->
+    <!-- ตารางเปรียบเทียบราคาและค่าคอมมิชชัน -->
     <div class="mb-6">
-      <h3 class="font-bold mb-3 text-gray-800">3. ตารางเปรียบเทียบราคา</h3>
+      <h3 class="font-bold mb-3 text-gray-800">3. ตารางเปรียบเทียบเบี้ยและผลประโยชน์</h3>
       <div class="overflow-x-auto">
         <table class="w-full border-collapse border text-sm text-center bg-white">
           <thead>
@@ -89,37 +94,42 @@
               <th class="border p-2">บริษัท</th>
               <th class="border p-2">ประเภท</th>
               <th class="border p-2">เบี้ยรวม</th>
-              <th class="border p-2 text-red-600">ค่าคอมฯ</th>
-              <th class="border p-2">จัดการ</th>
+              <th class="border p-2 text-red-600">ค่าคอมฯ (%)</th>
+              <th class="border p-2 text-red-600">ค่าคอมฯ (บาท)</th>
+              <th class="border p-2 no-print">จัดการ</th>
             </tr>
           </thead>
           <tbody id="compare-table-body">
-            <tr id="empty-row"><td colspan="5" class="p-6 text-gray-400">ยังไม่มีข้อมูลเปรียบเทียบ</td></tr>
+            <tr id="empty-row"><td colspan="6" class="p-6 text-gray-400">ยังไม่มีข้อมูลเปรียบเทียบ</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- ปุ่ม Action -->
-    <div class="flex flex-col md:flex-row gap-3 mt-8">
+    <!-- ปุ่ม Action สำหรับพิมพ์ PDF และส่ง LINE -->
+    <div class="flex flex-col md:flex-row gap-3 mt-8 no-print">
       <button onclick="generatePDF()" class="w-full bg-red-500 text-white px-4 py-3 rounded font-bold shadow hover:bg-red-600">
-        📄 ดาวน์โหลด PDF
+        📄 ดาวน์โหลดใบเสนอราคา (PDF)
       </button>
       <button onclick="saveAndSendLINE()" class="w-full bg-green-500 text-white px-4 py-3 rounded font-bold shadow hover:bg-green-600">
-        💬 บันทึกและส่งยืนยัน LINE
+        💬 บันทึกและส่ง Flex Message เข้า LINE
       </button>
     </div>
   </div>
 
   <script>
-    let currentAgentLevel = "";
+    let currentAgent = null;
     let currentUserLineId = "";
     const LIFF_ID = "2009043114-HC6s2Lkm"; 
     
-    // ⚠️ อย่าลืมแก้ตรงนี้เป็น Web App URL ของคุณ!
+    // ⚠️ นำ Web App URL ของ GAS มาใส่ตรงนี้
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzhLC4eCwMshx8BacjOr-4lY9eMKXc-Ilx_HB03Nx_0mxyM3drSnibQUy9jnjLNc0El/exec"; 
 
     window.onload = () => {
+      // แสดงวันที่ปัจจุบัน
+      const n = new Date();
+      document.getElementById('current-date').innerText = `${n.getDate()}/${n.getMonth()+1}/${n.getFullYear()+543}`;
+
       liff.init({ liffId: LIFF_ID }).then(() => {
         if (!liff.isLoggedIn()) {
           liff.login();
@@ -138,30 +148,26 @@
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'checkLogin', uid: uid })
       })
-      .then(response => response.json())
+      .then(res => res.json())
       .then(result => {
         if(result.status === 'success') {
           hideAllSections();
           if (result.data) {
             if (result.data.status === 'Active') {
               document.getElementById('app-section').classList.remove('hidden');
-              document.getElementById('agent-info-display').innerText = `ตัวแทน: ${result.data.name} (ระดับ: ${result.data.level || 'ยังไม่ระบุ'})`;
-              currentAgentLevel = result.data.level; // เก็บระดับตัวแทนไว้ใช้คำนวณ
+              document.getElementById('agent-info-display').innerText = `ตัวแทน: ${result.data.name} (ระดับ: ${result.data.level})`;
+              currentAgent = result.data; // เก็บข้อมูลตัวแทนทั้งหมดไว้ใช้
             } else {
               document.getElementById('pending-section').classList.remove('hidden');
             }
           } else {
             document.getElementById('register-section').classList.remove('hidden');
           }
-        } else {
-          alert("Error: " + result.message);
         }
-      })
-      .catch(error => alert("การเชื่อมต่อล้มเหลว: " + error));
+      });
     }
 
     function submitRegistration() {
-      // (โค้ดส่วนนี้เหมือนเดิม)
       const name = document.getElementById('reg-name').value;
       const phone = document.getElementById('reg-phone').value;
       if(!name || !phone) return alert('กรุณากรอกข้อมูลให้ครบถ้วน');
@@ -173,7 +179,7 @@
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'register', formData: { name: name, phone: phone, uid: currentUserLineId } })
       })
-      .then(response => response.json())
+      .then(res => res.json())
       .then(result => {
         if(result.status === 'success') {
           hideAllSections();
@@ -182,13 +188,7 @@
       });
     }
 
-    function hideAllSections() {
-      ['loading-section', 'register-section', 'pending-section', 'app-section'].forEach(id => {
-        document.getElementById(id).classList.add('hidden');
-      });
-    }
-
-    // --- ฟังก์ชันใหม่: เพิ่มข้อมูลลงตารางเปรียบเทียบ ---
+    // --- ฟังก์ชันดึงเรทค่าคอมแบบ Real-time จาก Sheet และเพิ่มลงตาราง ---
     function addCompare() {
       const type = document.getElementById('ins-type').value;
       const company = document.getElementById('ins-company').value;
@@ -199,33 +199,97 @@
         return;
       }
 
-      // จำลองการคำนวณค่าคอม (เดี๋ยวเราจะเชื่อมกับ Sheet ค่าคอมในสเตปต่อไป)
-      // สมมติค่าคอม 12% สำหรับทดสอบ UI
-      const commAmount = (parseFloat(premium) * 0.12).toFixed(2); 
+      // ยิงไปถามเรทค่าคอมที่ GAS ตามบริษัท ประเภท และระดับตัวแทน
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ 
+          action: 'getCommRate', 
+          company: company, 
+          type: type, 
+          level: currentAgent.level 
+        })
+      })
+      .then(res => res.json())
+      .then(result => {
+        const rate = (result.status === 'success') ? result.rate : 0;
+        const commAmount = (parseFloat(premium) * (rate / 100)).toFixed(2);
 
-      const tbody = document.getElementById('compare-table-body');
-      const emptyRow = document.getElementById('empty-row');
-      if (emptyRow) emptyRow.remove();
+        const tbody = document.getElementById('compare-table-body');
+        const emptyRow = document.getElementById('empty-row');
+        if (emptyRow) emptyRow.remove();
 
-      const tr = document.createElement('tr');
-      tr.className = "border-b hover:bg-gray-50";
-      tr.innerHTML = `
-        <td class="border p-2">${company}</td>
-        <td class="border p-2">${type}</td>
-        <td class="border p-2 font-semibold">${Number(premium).toLocaleString()}</td>
-        <td class="border p-2 text-red-600 font-bold">${Number(commAmount).toLocaleString()}</td>
-        <td class="border p-2">
-          <button onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700 font-bold">X</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-
-      // เคลียร์ช่องกรอกเงิน
-      document.getElementById('ins-premium').value = '';
+        const tr = document.createElement('tr');
+        tr.className = "border-b hover:bg-gray-50";
+        tr.innerHTML = `
+          <td class="border p-2">${company}</td>
+          <td class="border p-2">${type}</td>
+          <td class="border p-2 font-semibold">${Number(premium).toLocaleString()}</td>
+          <td class="border p-2 text-red-600">${rate}%</td>
+          <td class="border p-2 text-red-600 font-bold">${Number(commAmount).toLocaleString()}</td>
+          <td class="border p-2 no-print">
+            <button onclick="this.parentElement.parentElement.remove()" class="text-red-500 font-bold">X</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+        document.getElementById('ins-premium').value = '';
+      });
     }
 
-    function generatePDF() { alert("กำลังพัฒนาฟังก์ชันสร้างใบเสนอราคา PDF"); }
-    function saveAndSendLINE() { alert("กำลังพัฒนาฟังก์ชันบันทึกรายงานและส่ง Flex Message"); }
+    // --- ฟังก์ชันที่ 1: ดาวน์โหลดเป็น PDF ---
+    function generatePDF() {
+      const element = document.getElementById('app-section');
+      const opt = {
+        margin:       0.3,
+        filename:     'Quotation.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'in', format: 'A4', orientation: 'portrait' }
+      };
+      // ซ่อนปุ่มจัดการชั่วคราวก่อนพริ้นต์
+      document.querySelectorAll('.no-print').forEach(el => el.classList.add('hidden'));
+      html2pdf().set(opt).from(element).save().then(() => {
+        document.querySelectorAll('.no-print').forEach(el => el.classList.remove('hidden'));
+      });
+    }
+
+    // --- ฟังก์ชันที่ 2: บันทึกข้อมูลและส่ง LINE (Flex Message) ---
+    function saveAndSendLINE() {
+      const custName = document.getElementById('cust-name').value;
+      const carReg = document.getElementById('car-reg').value;
+
+      if(!custName || !carReg) {
+        alert("กรุณากรอกชื่อลูกค้าและทะเบียนรถก่อนบันทึก");
+        return;
+      }
+
+      const quoteData = {
+        agentId: currentAgent.id,
+        customerName: custName,
+        carReg: carReg,
+        agentLineUid: currentUserLineId
+      };
+
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'saveQuote', quoteData: quoteData })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if(result.status === 'success') {
+          alert("บันทึกข้อมูลและส่ง Flex Message เข้ากลุ่มเรียบร้อยแล้ว!");
+        } else {
+          alert("เกิดข้อผิดพลาดในการบันทึก");
+        }
+      });
+    }
+
+    function hideAllSections() {
+      ['loading-section', 'register-section', 'pending-section', 'app-section'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+    }
   </script>
 </body>
 </html>
