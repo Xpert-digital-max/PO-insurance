@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ระบบเสนอราคาเบี้ยประกัน</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- โหลด html2pdf สำหรับแปลงหน้าเว็บเป็น PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
@@ -32,21 +31,84 @@
     <p class="text-gray-700">ข้อมูลของคุณอยู่ในระบบแล้ว กรุณารอแอดมินเปิดสิทธิ์การใช้งาน (Active)</p>
   </div>
 
-  <!-- 4. หน้าแอปพลิเคชันหลัก (พื้นที่สำหรับออกใบเสนอราคาและพิมพ์ PDF) -->
+  <!-- 4. หน้าแอปพลิเคชันหลัก -->
   <div id="app-section" class="hidden max-w-4xl mx-auto bg-white p-6 rounded shadow mt-2">
     
-    <!-- ส่วนหัวใบเสนอราคา -->
+    <!-- ส่วนหัว -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4 gap-2">
       <div>
-        <h2 class="text-2xl font-bold text-blue-800">ใบเสนอราคาประกันภัย</h2>
+        <h2 class="text-2xl font-bold text-blue-800">สร้างใบเสนอราคาประกันภัย</h2>
         <p class="text-xs text-gray-500">วันที่นำเสนอ: <span id="current-date"></span></p>
       </div>
       <span id="agent-info-display" class="text-sm text-gray-700 font-semibold bg-blue-50 px-3 py-1 rounded border border-blue-200"></span>
     </div>
-    
-    <!-- ข้อมูลลูกค้าและรถยนต์ -->
+
+    <!-- ลำดับที่ 1: เลือกแบบประกัน และบริษัท -->
+    <div class="mb-6 p-4 bg-gray-50 rounded border no-print">
+      <h3 class="font-bold mb-3 text-gray-800">1. เลือกแบบประกันและบริษัทฯ</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        <!-- เลือกประเภทประกัน -->
+        <select id="ins-type" onchange="handleTypeChange()" class="border p-2 rounded w-full">
+          <option value="">-- เลือกประเภทประกัน --</option>
+          <option value="ป.1">ประเภท 1 (ป.1)</option>
+          <option value="ป.2">ประเภท 2 (ป.2)</option>
+          <option value="2+">ประเภท 2+ (2+)</option>
+          <option value="3">ประเภท 3 (ป.3)</option>
+          <option value="3+">ประเภท 3+ (3+)</option>
+        </select>
+
+        <!-- ทุนประกัน (เฉพาะ ป.1 ให้กรอกเอง, นอกนั้นล็อกหรือแสดงตามเงื่อนไข) -->
+        <input type="number" id="ins-sum-insured" placeholder="ทุนประกัน (บาท)" class="border p-2 rounded w-full">
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+        <select id="ins-company" class="border p-2 rounded w-full">
+          <option value="">-- เลือกบริษัทฯ ประกัน --</option>
+          <option value="อินทรประกันภัย">อินทรประกันภัย</option>
+          <option value="วิริยะประกันภัย">วิริยะประกันภัย</option>
+          <option value="กรุงเทพประกันภัย">กรุงเทพประกันภัย</option>
+          <option value="เมืองไทยประกันภัย">เมืองไทยประกันภัย</option>
+          <option value="ทิพยประกันภัย">ทิพยประกันภัย</option>
+        </select>
+
+        <input type="text" id="ins-plan" placeholder="ระบุแผนประกัน (เช่น แผน 1, เก๋ง 110)" class="border p-2 rounded w-full">
+        
+        <input type="number" id="ins-premium" placeholder="เบี้ยรวม (บาท)" class="border p-2 rounded w-full">
+      </div>
+
+      <button onclick="addCompare()" class="w-full bg-blue-600 text-white rounded p-2 font-semibold hover:bg-blue-700 transition">
+        + เพิ่มเปรียบเทียบ
+      </button>
+    </div>
+
+    <!-- ลำดับที่ 2: ตารางเปรียบเทียบ (แยกส่วนที่แสดงค่าคอมเฉพาะตัวแทน และซ่อนตอนพิมพ์ PDF) -->
+    <div class="mb-6">
+      <h3 class="font-bold mb-3 text-gray-800">2. ตารางเปรียบเทียบเบี้ยประกัน</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse border text-sm text-center bg-white">
+          <thead>
+            <tr class="bg-blue-100 text-blue-900">
+              <th class="border p-2">บริษัท</th>
+              <th class="border p-2">ประเภท / แผน</th>
+              <th class="border p-2">ทุนประกัน</th>
+              <th class="border p-2">เบี้ยรวมสุทธิ</th>
+              <!-- คอลัมน์ค่าคอมจะถูกซ่อนเวลาออก PDF ให้ลูกค้าดู -->
+              <th class="border p-2 text-red-600 agent-only">ค่าคอมฯ (%)</th>
+              <th class="border p-2 text-red-600 agent-only">ค่าคอมฯ (บาท)</th>
+              <th class="border p-2 no-print">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="compare-table-body">
+            <tr id="empty-row"><td colspan="7" class="p-6 text-gray-400">ยังไม่มีข้อมูลเปรียบเทียบ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ลำดับที่ 3: ข้อมูลลูกค้าและรถยนต์ -->
     <div class="mb-6 p-4 bg-gray-50 rounded border">
-      <h3 class="font-bold mb-3 text-gray-800">1. ข้อมูลลูกค้าและรถยนต์</h3>
+      <h3 class="font-bold mb-3 text-gray-800">3. ข้อมูลลูกค้าและรถยนต์</h3>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <input type="text" id="cust-name" placeholder="ชื่อผู้เอาประกันภัย" class="border p-2 rounded w-full">
         <input type="text" id="car-reg" placeholder="ทะเบียนรถ" class="border p-2 rounded w-full">
@@ -54,59 +116,7 @@
       </div>
     </div>
 
-    <!-- เลือกบริษัทและเบี้ยประกันเพื่อเปรียบเทียบ -->
-    <div class="mb-6 p-4 bg-gray-50 rounded border no-print">
-      <h3 class="font-bold mb-3 text-gray-800">2. เลือกบริษัทและเบี้ยประกัน</h3>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
-        <select id="ins-type" class="border p-2 rounded w-full">
-          <option value="">-- ประเภท --</option>
-          <option value="ป.1 ซ่อมห้าง">ป.1 ซ่อมห้าง</option>
-          <option value="ป.1 ซ่อมอู่">ป.1 ซ่อมอู่</option>
-          <option value="2+">2+</option>
-          <option value="3+">3+</option>
-          <option value="ป.3">ประเภท 3</option>
-        </select>
-        
-        <select id="ins-company" class="border p-2 rounded w-full">
-          <option value="">-- บริษัท --</option>
-          <option value="อินทรประกันภัย">อินทรประกันภัย</option>
-          <option value="วิริยะประกันภัย">วิริยะประกันภัย</option>
-          <option value="กรุงเทพประกันภัย">กรุงเทพประกันภัย</option>
-          <option value="เมืองไทยประกันภัย">เมืองไทยประกันภัย</option>
-          <option value="ทิพยประกันภัย">ทิพยประกันภัย</option>
-        </select>
-        
-        <input type="number" id="ins-premium" placeholder="เบี้ยรวม (บาท)" class="border p-2 rounded w-full">
-        
-        <button onclick="addCompare()" class="bg-blue-600 text-white rounded p-2 font-semibold hover:bg-blue-700 transition">
-          + เพิ่มเปรียบเทียบ
-        </button>
-      </div>
-    </div>
-
-    <!-- ตารางเปรียบเทียบราคาและค่าคอมมิชชัน -->
-    <div class="mb-6">
-      <h3 class="font-bold mb-3 text-gray-800">3. ตารางเปรียบเทียบเบี้ยและผลประโยชน์</h3>
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse border text-sm text-center bg-white">
-          <thead>
-            <tr class="bg-blue-100 text-blue-900">
-              <th class="border p-2">บริษัท</th>
-              <th class="border p-2">ประเภท</th>
-              <th class="border p-2">เบี้ยรวม</th>
-              <th class="border p-2 text-red-600">ค่าคอมฯ (%)</th>
-              <th class="border p-2 text-red-600">ค่าคอมฯ (บาท)</th>
-              <th class="border p-2 no-print">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody id="compare-table-body">
-            <tr id="empty-row"><td colspan="6" class="p-6 text-gray-400">ยังไม่มีข้อมูลเปรียบเทียบ</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ปุ่ม Action สำหรับพิมพ์ PDF และส่ง LINE -->
+    <!-- ปุ่ม Action -->
     <div class="flex flex-col md:flex-row gap-3 mt-8 no-print">
       <button onclick="generatePDF()" class="w-full bg-red-500 text-white px-4 py-3 rounded font-bold shadow hover:bg-red-600">
         📄 ดาวน์โหลดใบเสนอราคา (PDF)
@@ -121,12 +131,9 @@
     let currentAgent = null;
     let currentUserLineId = "";
     const LIFF_ID = "2009043114-HC6s2Lkm"; 
-    
-    // ⚠️ นำ Web App URL ของ GAS มาใส่ตรงนี้
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzhLC4eCwMshx8BacjOr-4lY9eMKXc-Ilx_HB03Nx_0mxyM3drSnibQUy9jnjLNc0El/exec"; 
 
     window.onload = () => {
-      // แสดงวันที่ปัจจุบัน
       const n = new Date();
       document.getElementById('current-date').innerText = `${n.getDate()}/${n.getMonth()+1}/${n.getFullYear()+543}`;
 
@@ -156,7 +163,7 @@
             if (result.data.status === 'Active') {
               document.getElementById('app-section').classList.remove('hidden');
               document.getElementById('agent-info-display').innerText = `ตัวแทน: ${result.data.name} (ระดับ: ${result.data.level})`;
-              currentAgent = result.data; // เก็บข้อมูลตัวแทนทั้งหมดไว้ใช้
+              currentAgent = result.data;
             } else {
               document.getElementById('pending-section').classList.remove('hidden');
             }
@@ -188,10 +195,25 @@
       });
     }
 
-    // --- ฟังก์ชันดึงเรทค่าคอมแบบ Real-time จาก Sheet และเพิ่มลงตาราง ---
+    // จัดการเงื่อนไขทุนประกันตามประเภทที่เลือก
+    function handleTypeChange() {
+      const type = document.getElementById('ins-type').value;
+      const sumInsuredInput = document.getElementById('ins-sum-insured');
+      if (type === 'ป.1') {
+        sumInsuredInput.disabled = false;
+        sumInsuredInput.placeholder = "กรุณากรอกทุนประกันเอง";
+        sumInsuredInput.value = "";
+      } else {
+        sumInsuredInput.disabled = false; // หรือเปิดให้กรอกทุนตามแผนของประเภทนั้นๆ ได้
+        sumInsuredInput.placeholder = "ทุนประกัน / วงเงินคุ้มครอง";
+      }
+    }
+
     function addCompare() {
       const type = document.getElementById('ins-type').value;
+      const sumInsured = document.getElementById('ins-sum-insured').value;
       const company = document.getElementById('ins-company').value;
+      const plan = document.getElementById('ins-plan').value;
       const premium = document.getElementById('ins-premium').value;
 
       if(!type || !company || !premium) {
@@ -199,14 +221,13 @@
         return;
       }
 
-      // ยิงไปถามเรทค่าคอมที่ GAS ตามบริษัท ประเภท และระดับตัวแทน
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ 
           action: 'getCommRate', 
           company: company, 
-          type: type, 
+          type: type + (plan ? ' ' + plan : ''), 
           level: currentAgent.level 
         })
       })
@@ -223,10 +244,11 @@
         tr.className = "border-b hover:bg-gray-50";
         tr.innerHTML = `
           <td class="border p-2">${company}</td>
-          <td class="border p-2">${type}</td>
+          <td class="border p-2">${type} ${plan ? '(' + plan + ')' : ''}</td>
+          <td class="border p-2">${sumInsured ? Number(sumInsured).toLocaleString() : '-'}</td>
           <td class="border p-2 font-semibold">${Number(premium).toLocaleString()}</td>
-          <td class="border p-2 text-red-600">${rate}%</td>
-          <td class="border p-2 text-red-600 font-bold">${Number(commAmount).toLocaleString()}</td>
+          <td class="border p-2 text-red-600 agent-only">${rate}%</td>
+          <td class="border p-2 text-red-600 font-bold agent-only">${Number(commAmount).toLocaleString()}</td>
           <td class="border p-2 no-print">
             <button onclick="this.parentElement.parentElement.remove()" class="text-red-500 font-bold">X</button>
           </td>
@@ -236,9 +258,11 @@
       });
     }
 
-    // --- ฟังก์ชันที่ 1: ดาวน์โหลดเป็น PDF ---
+    // ดาวน์โหลด PDF โดยซ่อนคอลัมน์ค่าคอมมิชชันและปุ่มจัดการ ไม่ให้ลูกค้าเห็น
     function generatePDF() {
       const element = document.getElementById('app-section');
+      document.querySelectorAll('.no-print, .agent-only').forEach(el => el.classList.add('hidden'));
+      
       const opt = {
         margin:       0.3,
         filename:     'Quotation.pdf',
@@ -246,14 +270,13 @@
         html2canvas:  { scale: 2, useCORS: true },
         jsPDF:        { unit: 'in', format: 'A4', orientation: 'portrait' }
       };
-      // ซ่อนปุ่มจัดการชั่วคราวก่อนพริ้นต์
-      document.querySelectorAll('.no-print').forEach(el => el.classList.add('hidden'));
+
       html2pdf().set(opt).from(element).save().then(() => {
-        document.querySelectorAll('.no-print').forEach(el => el.classList.remove('hidden'));
+        document.querySelectorAll('.no-print, .agent-only').forEach(el => el.classList.remove('hidden'));
       });
     }
 
-    // --- ฟังก์ชันที่ 2: บันทึกข้อมูลและส่ง LINE (Flex Message) ---
+    // บันทึกข้อมูล (ไม่ส่งค่าคอมเข้าฐานข้อมูลกลางส่วนที่แชร์)
     function saveAndSendLINE() {
       const custName = document.getElementById('cust-name').value;
       const carReg = document.getElementById('car-reg').value;
