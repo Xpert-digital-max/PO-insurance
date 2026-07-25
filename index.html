@@ -25,7 +25,7 @@
       <span id="agent-info-display" class="text-sm text-gray-700 font-semibold bg-blue-50 px-3 py-1 rounded border border-blue-200"></span>
     </div>
 
-    <!-- 1. ส่วนเลือกเงื่อนไข -->
+    <!-- 1. ส่วนเลือกเงื่อนไข (ช่องทุนประกันสามารถพิมพ์กรอกเองได้อิสระ) -->
     <div class="mb-6 p-4 bg-gray-50 rounded border no-print">
       <h3 class="font-bold mb-3 text-gray-800">1. เลือกแบบประกันและเงื่อนไขรถยนต์</h3>
       
@@ -61,7 +61,8 @@
           <option value="">-- เลือกแผนประกัน --</option>
         </select>
 
-        <input type="text" id="ins-sum-insured" placeholder="ทุนประกัน" class="border p-2 rounded w-full bg-gray-100" readonly>
+        <!-- อนุญาตให้พิมพ์กรอกทุนประกันเองได้ -->
+        <input type="text" id="ins-sum-insured" placeholder="ทุนประกัน (พิมพ์กรอกเองได้)" class="border p-2 rounded w-full bg-white">
         
         <input type="number" id="ins-premium" placeholder="เบี้ยรวมสุทธิ (บาท)" class="border p-2 rounded w-full bg-yellow-50">
       </div>
@@ -280,7 +281,7 @@
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getCommRate', company: company, type: type, plan: plan, carType: carType, location: location, sumInsured: sumInsured, level: currentAgent.level })
+        body: JSON.stringify({ action: 'getCommRate', company: company, type: type, plan: plan, carType: carType, location: location, sumInsured: sumInsured, premium: premium, level: currentAgent.level })
       })
       .then(res => res.json())
       .then(result => {
