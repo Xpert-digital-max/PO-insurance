@@ -25,12 +25,12 @@
       <span id="agent-info-display" class="text-sm text-gray-700 font-semibold bg-blue-50 px-3 py-1 rounded border border-blue-200"></span>
     </div>
 
-    <!-- 1. ส่วนเลือกเงื่อนไขประกัน (สลับแผนประกันไว้บน ทุนประกันไว้ล่าง) -->
+    <!-- 1. ส่วนเลือกเงื่อนไข (สลับแผนขึ้นบน ทุนลงล่าง ดึงข้อมูลอัตโนมัติ) -->
     <div class="mb-6 p-4 bg-gray-50 rounded border no-print">
       <h3 class="font-bold mb-3 text-gray-800">1. เลือกแบบประกันและเงื่อนไขรถยนต์</h3>
       
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-        <select id="ins-type" class="border p-2 rounded w-full">
+        <select id="ins-type" onchange="fetchPlans()" class="border p-2 rounded w-full">
           <option value="">-- ประเภทประกัน --</option>
           <option value="ประเภท 1">ประเภท 1</option>
           <option value="ประเภท 2">ประเภท 2</option>
@@ -39,29 +39,33 @@
           <option value="ประเภท 3+ พลัส">ประเภท 3+ พลัส</option>
         </select>
 
-        <select id="car-type" class="border p-2 rounded w-full">
+        <select id="car-type" onchange="fetchPlans()" class="border p-2 rounded w-full">
           <option value="เก๋ง">รถเก๋ง</option>
           <option value="กระบะ">รถกระบะ</option>
           <option value="ตู้">รถตู้</option>
           <option value="อื่นๆ">อื่นๆ</option>
         </select>
 
-        <select id="car-location" class="border p-2 rounded w-full">
+        <select id="car-location" onchange="fetchPlans()" class="border p-2 rounded w-full">
           <option value="กทม.">ป้ายทะเบียน กทม.</option>
           <option value="ตจว.">ป้ายทะเบียน ต่างจังหวัด</option>
         </select>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
-        <select id="ins-company" onchange="fetchPresetData()" class="border p-2 rounded w-full">
+        <select id="ins-company" onchange="fetchPlans()" class="border p-2 rounded w-full">
           <option value="">-- เลือกบริษัทฯ ประกัน --</option>
         </select>
 
-        <!-- สลับแผนประกันขึ้นมาก่อน -->
-        <input type="text" id="ins-plan" placeholder="ระบุแผนประกัน (เช่น ซ่อมอู่, สุขใจ)" class="border p-2 rounded w-full">
-        <!-- ทุนประกันอยู่ด้านล่าง -->
-        <input type="text" id="ins-sum-insured" placeholder="ทุนประกัน (ดึงอัตโนมัติ)" class="border p-2 rounded w-full bg-gray-100" readonly>
+        <!-- แผนประกัน (Dropdown ดึงจาก Sheet) -->
+        <select id="ins-plan" onchange="onPlanSelected()" class="border p-2 rounded w-full">
+          <option value="">-- เลือกแผนประกัน --</option>
+        </select>
+
+        <!-- ทุนประกัน (แสดงอัตโนมัติ) -->
+        <input type="text" id="ins-sum-insured" placeholder="ทุนประกัน" class="border p-2 rounded w-full bg-gray-100" readonly>
         
+        <!-- เบี้ยรวมสุทธิ -->
         <input type="number" id="ins-premium" placeholder="เบี้ยรวมสุทธิ (บาท)" class="border p-2 rounded w-full bg-yellow-50">
       </div>
 
@@ -70,18 +74,18 @@
       </button>
     </div>
 
-    <!-- 2. ตารางเปรียบเทียบ (ซ่อน % คอม เหลือแสดงเฉพาะจำนวนเงิน) -->
+    <!-- 2. ตารางเปรียบเทียบ (แสดงยอดค่าคอมขั้นบันได) -->
     <div class="mb-6">
-      <h3 class="font-bold mb-3 text-gray-800">2. ตารางเปรียบเทียบเบี้ยประกัน</h3>
+      <h3 class="font-bold mb-3 text-gray-800">2. ตารางเปรียบเทียบเบี้ยประกันและค่าคอมมิชชัน</h3>
       <div class="overflow-x-auto">
-        <table class="w-full border-collapse border text-sm text-center bg-white">
+        <table class="w-full border-collapse border text-xs text-center bg-white">
           <thead>
             <tr class="bg-blue-100 text-blue-900">
               <th class="border p-2">บริษัท</th>
-              <th class="border p-2">ประเภท / แผน</th>
+              <th class="border p-2">แผน / ประเภท</th>
               <th class="border p-2">ทุนประกัน</th>
               <th class="border p-2">เบี้ยรวมสุทธิ</th>
-              <th class="border p-2 text-red-600 agent-only">ค่าคอมฯ (บาท)</th>
+              <th class="border p-2 text-red-600 agent-only">ค่าคอมฯ แยกตามระดับชั้น (บาท)</th>
               <th class="border p-2 no-print">จัดการ</th>
             </tr>
           </thead>
@@ -112,15 +116,15 @@
       </button>
     </div>
 
-    <!-- 4. ส่วนจัดการ/ติดตามใบเสนอราคาเดิม -->
+    <!-- 4. ส่วนจัดการใบเสนอราคาเดิม -->
     <div class="mt-10 pt-6 border-t">
-      <h3 class="font-bold mb-3 text-gray-800">📋 ติดตาม / จัดการใบเสนอราคาที่เคยบันทึก</h3>
-      <button onclick="loadAgentQuotations()" class="bg-gray-700 text-white px-4 py-2 rounded text-sm mb-3">🔄 โหลดรายการใบเสนอราคาของฉัน</button>
+      <h3 class="font-bold mb-3 text-gray-800">📋 ติดตาม / แก้ไขใบเสนอราคาเดิม</h3>
+      <button onclick="loadAgentQuotations()" class="bg-gray-700 text-white px-4 py-2 rounded text-sm mb-3">🔄 โหลดรายการของฉัน</button>
       <div class="overflow-x-auto">
         <table class="w-full border-collapse border text-xs text-center bg-white">
           <thead>
             <tr class="bg-gray-100 text-gray-800">
-              <th class="border p-2">เลขที่ใบเสนอราคา</th>
+              <th class="border p-2">เลขที่</th>
               <th class="border p-2">วันที่</th>
               <th class="border p-2">ลูกค้า</th>
               <th class="border p-2">ทะเบียนรถ</th>
@@ -137,7 +141,7 @@
 
   </div>
 
-  <!-- Modal แสดงตัวอย่างเอกสารขนาด A4 -->
+  <!-- Modal A4 -->
   <div id="pdf-preview-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-2">
     <div class="bg-white w-full max-w-2xl p-6 rounded shadow-lg max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-3 mb-4">
@@ -170,7 +174,8 @@
     let currentAgent = null;
     let currentUserLineId = "";
     let comparisonItems = [];
-    let editingQuoteId = null; // ตัวแปรเก็บสถานะกำลังแก้ไข
+    let availablePlansCache = [];
+    let editingQuoteId = null;
     const LIFF_ID = "2009043114-HC6s2Lkm"; 
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzhLC4eCwMshx8BacjOr-4lY9eMKXc-Ilx_HB03Nx_0mxyM3drSnibQUy9jnjLNc0El/exec"; 
 
@@ -229,9 +234,9 @@
       });
     }
 
-    function fetchPresetData() {
+    // ดึงแผนประกันมาใส่ Dropdown อัตโนมัติ
+    function fetchPlans() {
       const type = document.getElementById('ins-type').value;
-      const plan = document.getElementById('ins-plan').value;
       const carType = document.getElementById('car-type').value;
       const location = document.getElementById('car-location').value;
       const company = document.getElementById('ins-company').value;
@@ -240,15 +245,28 @@
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getCommRate', company: company, type: type, plan: plan, carType: carType, location: location, level: currentAgent.level })
+        body: JSON.stringify({ action: 'getPlans', company: company, type: type, carType: carType, location: location })
       })
       .then(res => res.json())
       .then(result => {
         if(result.status === 'success') {
-          document.getElementById('ins-sum-insured').value = result.data.sumInsured || '';
-          document.getElementById('ins-premium').value = result.data.grossPremium > 0 ? result.data.grossPremium : '';
+          availablePlansCache = result.data;
+          const planSelect = document.getElementById('ins-plan');
+          planSelect.innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
+          availablePlansCache.forEach((p, idx) => {
+            planSelect.innerHTML += `<option value="${idx}">${p.plan || 'ทั่วไป'} (ทุน: ${p.sumInsured})</option>`;
+          });
         }
       });
+    }
+
+    // เมื่อเลือกแผนประกัน ดึงทุนและเบี้ยมาใส่ทันที
+    function onPlanSelected() {
+      const idx = document.getElementById('ins-plan').value;
+      if(idx === "") return;
+      const selected = availablePlansCache[idx];
+      document.getElementById('ins-sum-insured').value = selected.sumInsured;
+      document.getElementById('ins-premium').value = selected.grossPremium > 0 ? selected.grossPremium : '';
     }
 
     function addCompare() {
@@ -257,7 +275,9 @@
       const location = document.getElementById('car-location').value;
       const sumInsured = document.getElementById('ins-sum-insured').value;
       const company = document.getElementById('ins-company').value;
-      const plan = document.getElementById('ins-plan').value;
+      
+      const planIdx = document.getElementById('ins-plan').value;
+      const plan = planIdx !== "" ? availablePlansCache[planIdx].plan : document.getElementById('ins-plan').value;
       const premium = document.getElementById('ins-premium').value;
 
       if(!type || !company || !premium) return alert("กรุณาเลือกประเภท บริษัท และระบุเบี้ยประกันให้ครบถ้วน");
@@ -265,15 +285,12 @@
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getCommRate', company: company, type: type, plan: plan, carType: carType, location: location, level: currentAgent.level })
+        body: JSON.stringify({ action: 'getCommRate', company: company, type: type, plan: plan, carType: carType, location: location, sumInsured: sumInsured, level: currentAgent.level })
       })
       .then(res => res.json())
       .then(result => {
-        const rate = (result.status === 'success') ? result.data.rate : 0;
-        const netPrem = (result.status === 'success' && result.data.netPremium > 0) ? result.data.netPremium : parseFloat(premium);
-        const commAmount = (netPrem * (rate / 100)).toFixed(2); // คำนวณเป็นยอดเงินคอม
-
-        const item = { company, type, plan, carType, location, sumInsured, premium, rate, commAmount };
+        const commData = (result.status === 'success') ? result.data.commBreakdown : {};
+        const item = { company, type, plan, carType, location, sumInsured, premium, commData };
         comparisonItems.push(item);
         renderTable();
         document.getElementById('ins-premium').value = '';
@@ -288,13 +305,18 @@
       }
       tbody.innerHTML = '';
       comparisonItems.forEach((item, index) => {
+        let commHtml = "";
+        for (let tier in item.commData) {
+          commHtml += `<div class="text-xs"><b>${tier}:</b> ${Number(item.commData[tier].amount).toLocaleString()} บ.</div>`;
+        }
+
         tbody.innerHTML += `
           <tr class="border-b hover:bg-gray-50">
             <td class="border p-2">${item.company}</td>
             <td class="border p-2">${item.type} ${item.plan ? '('+item.plan+')' : ''}<br><span class="text-xs text-gray-500">${item.carType} / ${item.location}</span></td>
             <td class="border p-2">${item.sumInsured ? Number(item.sumInsured).toLocaleString() : item.sumInsured}</td>
             <td class="border p-2 font-semibold">${Number(item.premium).toLocaleString()}</td>
-            <td class="border p-2 text-red-600 font-bold agent-only">${Number(item.commAmount).toLocaleString()}</td>
+            <td class="border p-2 text-red-600 font-bold agent-only">${commHtml || '-'}</td>
             <td class="border p-2 no-print"><button onclick="removeItem(${index})" class="text-red-500 font-bold">X</button></td>
           </tr>`;
       });
@@ -382,7 +404,7 @@
       .then(result => {
         if(result.status === 'success') {
           const tbody = document.getElementById('quotation-history-body');
-          window.myQuotesCache = result.quotes; // เก็บไว้ใช้อ้างอิงตอนกดแก้ไข
+          window.myQuotesCache = result.quotes;
           if(result.quotes.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-gray-400">ยังไม่มีประวัติใบเสนอราคา</td></tr>`;
             return;
@@ -415,7 +437,7 @@
         comparisonItems = JSON.parse(q.details) || [];
       } catch(e) { comparisonItems = []; }
       renderTable();
-      alert(`กำลังโหลดข้อมูลใบเสนอราคา ${q.quoteId} เพื่อแก้ไข คุณสามารถปรับเปลี่ยนข้อมูลแล้วกดบันทึกซ้ำได้ทันที`);
+      alert(`กำลังโหลดใบเสนอราคา ${q.quoteId} เพื่อแก้ไข`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
