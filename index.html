@@ -25,7 +25,7 @@
       <span id="agent-info-display" class="text-sm text-gray-700 font-semibold bg-blue-50 px-3 py-1 rounded border border-blue-200"></span>
     </div>
 
-    <!-- 1. ส่วนเลือกเงื่อนไข (ช่องทุนประกันสามารถพิมพ์กรอกเองได้อิสระ) -->
+    <!-- 1. ส่วนเลือกเงื่อนไข -->
     <div class="mb-6 p-4 bg-gray-50 rounded border no-print">
       <h3 class="font-bold mb-3 text-gray-800">1. เลือกแบบประกันและเงื่อนไขรถยนต์</h3>
       
@@ -61,7 +61,6 @@
           <option value="">-- เลือกแผนประกัน --</option>
         </select>
 
-        <!-- อนุญาตให้พิมพ์กรอกทุนประกันเองได้ -->
         <input type="text" id="ins-sum-insured" placeholder="ทุนประกัน (พิมพ์กรอกเองได้)" class="border p-2 rounded w-full bg-white">
         
         <input type="number" id="ins-premium" placeholder="เบี้ยรวมสุทธิ (บาท)" class="border p-2 rounded w-full bg-yellow-50">
@@ -72,7 +71,7 @@
       </button>
     </div>
 
-    <!-- 2. ตารางเปรียบเทียบ -->
+    <!-- 2. ตารางเปรียบเทียบ (แสดงส่วนต่างแต่ละชั้น + Total) -->
     <div class="mb-6">
       <h3 class="font-bold mb-3 text-gray-800">2. ตารางเปรียบเทียบเบี้ยประกันและค่าคอมมิชชัน</h3>
       <div class="overflow-x-auto">
@@ -83,7 +82,7 @@
               <th class="border p-2">แผน / ประเภท</th>
               <th class="border p-2">ทุนประกัน</th>
               <th class="border p-2">เบี้ยรวมสุทธิ</th>
-              <th class="border p-2 text-red-600 agent-only">ค่าคอมฯ แยกตามระดับชั้น (บาท)</th>
+              <th class="border p-2 text-red-600 agent-only">ค่าคอมฯ (ส่วนต่างแต่ละชั้น / Total)</th>
               <th class="border p-2 no-print">จัดการ</th>
             </tr>
           </thead>
@@ -286,7 +285,8 @@
       .then(res => res.json())
       .then(result => {
         const commData = (result.status === 'success') ? result.data.commBreakdown : {};
-        const item = { company, type, plan, carType, location, sumInsured, premium, commData };
+        const totalComm = (result.status === 'success') ? result.data.totalComm : 0;
+        const item = { company, type, plan, carType, location, sumInsured, premium, commData, totalComm };
         comparisonItems.push(item);
         renderTable();
         document.getElementById('ins-premium').value = '';
@@ -303,8 +303,9 @@
       comparisonItems.forEach((item, index) => {
         let commHtml = "";
         for (let tier in item.commData) {
-          commHtml += `<div class="text-xs"><b>${tier}:</b> ${Number(item.commData[tier].amount).toLocaleString()} บ.</div>`;
+          commHtml += `<div class="text-xs"><b>${tier}:</b> +${Number(item.commData[tier].amount).toLocaleString()} บ.</div>`;
         }
+        commHtml += `<div class="text-xs font-bold text-blue-700 mt-1 border-t pt-1">Total: ${Number(item.totalComm).toLocaleString()} บ.</div>`;
 
         tbody.innerHTML += `
           <tr class="border-b hover:bg-gray-50">
