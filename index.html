@@ -25,18 +25,18 @@
       <span id="agent-info-display" class="text-sm text-gray-700 font-semibold bg-blue-50 px-3 py-1 rounded border border-blue-200"></span>
     </div>
 
-    <!-- 1. ส่วนเลือกเงื่อนไขประกัน -->
+    <!-- 1. ส่วนเลือกเงื่อนไขประกัน ( Type ตรงกับในชีตเป๊ะๆ ) -->
     <div class="mb-6 p-4 bg-gray-50 rounded border no-print">
       <h3 class="font-bold mb-3 text-gray-800">1. เลือกแบบประกันและเงื่อนไขรถยนต์</h3>
       
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
         <select id="ins-type" class="border p-2 rounded w-full">
           <option value="">-- ประเภทประกัน --</option>
-          <option value="ป.1">ประเภท 1 (ป.1)</option>
-          <option value="ป.2">ประเภท 2 (ป.2)</option>
-          <option value="2+">ประเภท 2+ (2+)</option>
-          <option value="3">ประเภท 3 (ป.3)</option>
-          <option value="3+">ประเภท 3+ (3+)</option>
+          <option value="ประเภท 1">ประเภท 1</option>
+          <option value="ประเภท 2">ประเภท 2</option>
+          <option value="ประเภท 2+ พลัส">ประเภท 2+ พลัส</option>
+          <option value="ประเภท 3">ประเภท 3</option>
+          <option value="ประเภท 3+ พลัส">ประเภท 3+ พลัส</option>
         </select>
 
         <select id="car-type" class="border p-2 rounded w-full">
@@ -58,7 +58,7 @@
         </select>
 
         <input type="text" id="ins-sum-insured" placeholder="ทุนประกัน (ดึงอัตโนมัติ)" class="border p-2 rounded w-full bg-gray-100" readonly>
-        <input type="text" id="ins-plan" placeholder="ระบุแผนประกัน (ถ้ามี)" class="border p-2 rounded w-full">
+        <input type="text" id="ins-plan" placeholder="ระบุแผนประกัน (เช่น ซ่อมอู่, สุขใจ)" class="border p-2 rounded w-full">
         <input type="number" id="ins-premium" placeholder="เบี้ยรวมสุทธิ (บาท)" class="border p-2 rounded w-full bg-yellow-50">
       </div>
 
@@ -106,12 +106,36 @@
         📄 ดูตัวอย่างเอกสารเสนอราคา (A4)
       </button>
       <button onclick="saveAndSendLINE()" class="w-full bg-green-500 text-white px-4 py-3 rounded font-bold shadow hover:bg-green-600">
-        💬 บันทึกและส่ง Flex Message เข้า LINE
+        💬 บันทึกและส่ง Flex Message ให้ลูกค้า
       </button>
     </div>
+
+    <!-- 4. ส่วนจัดการ/ติดตามใบเสนอราคาเดิม -->
+    <div class="mt-10 pt-6 border-t">
+      <h3 class="font-bold mb-3 text-gray-800">📋 ติดตาม / จัดการใบเสนอราคาที่เคยบันทึก</h3>
+      <button onclick="loadAgentQuotations()" class="bg-gray-700 text-white px-4 py-2 rounded text-sm mb-3">🔄 โหลดรายการใบเสนอราคาของฉัน</button>
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse border text-xs text-center bg-white">
+          <thead>
+            <tr class="bg-gray-100 text-gray-800">
+              <th class="border p-2">เลขที่ใบเสนอราคา</th>
+              <th class="border p-2">วันที่</th>
+              <th class="border p-2">ลูกค้า</th>
+              <th class="border p-2">ทะเบียนรถ</th>
+              <th class="border p-2">สถานะ</th>
+              <th class="border p-2">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="quotation-history-body">
+            <tr><td colspan="6" class="p-4 text-gray-400">ยังไม่ได้โหลดรายการ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 
-  <!-- Modal แสดงตัวอย่างเอกสารขนาด A4 ก่อนดาวน์โหลด -->
+  <!-- Modal แสดงตัวอย่างเอกสารขนาด A4 -->
   <div id="pdf-preview-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-2">
     <div class="bg-white w-full max-w-2xl p-6 rounded shadow-lg max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-3 mb-4">
@@ -119,7 +143,6 @@
         <button onclick="closePreview()" class="text-gray-500 font-bold text-xl">&times;</button>
       </div>
       
-      <!-- พื้นจำลองหน้ากระดาษ A4 -->
       <div id="a4-document" class="p-6 border bg-white text-black text-sm rounded">
         <div class="text-center font-bold text-xl mb-1 text-blue-800">ใบเสนอราคาประกันภัยรถยนต์</div>
         <div class="flex justify-between mb-4 text-xs text-gray-600 border-b pb-2">
@@ -176,6 +199,7 @@
           currentAgent = result.data;
           document.getElementById('agent-info-display').innerText = `ตัวแทน: ${result.data.name} (ระดับ: ${result.data.level})`;
           loadCompanies();
+          loadAgentQuotations();
         } else {
           document.getElementById('loading-section').innerHTML = '<h2 class="text-xl font-bold text-yellow-600">รอการอนุมัติสิทธิ์</h2>';
         }
@@ -202,9 +226,9 @@
       });
     }
 
-    // ดึงทุนประกันและเบี้ยตั้งต้นจาก Sheet อัตโนมัติเมื่อเลือกบริษัท
     function fetchPresetData() {
       const type = document.getElementById('ins-type').value;
+      const plan = document.getElementById('ins-plan').value;
       const carType = document.getElementById('car-type').value;
       const location = document.getElementById('car-location').value;
       const company = document.getElementById('ins-company').value;
@@ -213,7 +237,7 @@
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getCommRate', company: company, type: type, carType: carType, location: location, level: currentAgent.level })
+        body: JSON.stringify({ action: 'getCommRate', company: company, type: type, plan: plan, carType: carType, location: location, level: currentAgent.level })
       })
       .then(res => res.json())
       .then(result => {
@@ -238,12 +262,14 @@
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getCommRate', company: company, type: type, carType: carType, location: location, level: currentAgent.level })
+        body: JSON.stringify({ action: 'getCommRate', company: company, type: type, plan: plan, carType: carType, location: location, level: currentAgent.level })
       })
       .then(res => res.json())
       .then(result => {
         const rate = (result.status === 'success') ? result.data.rate : 0;
-        const commAmount = (parseFloat(premium) * (rate / 100)).toFixed(2);
+        // คำนวณคอมจาก NetPremium (เบี้ยสุทธิ คอลัมน์ G ที่ถูกต้องตามชีตใหม่)
+        const netPrem = (result.status === 'success' && result.data.netPremium > 0) ? result.data.netPremium : parseFloat(premium);
+        const commAmount = (netPrem * (rate / 100)).toFixed(2);
 
         const item = { company, type, plan, carType, location, sumInsured, premium, rate, commAmount };
         comparisonItems.push(item);
@@ -278,7 +304,6 @@
       renderTable();
     }
 
-    // เปิดหน้าต่าง Modal ตัวอย่างเอกสาร A4
     function openPreview() {
       if(comparisonItems.length === 0) return alert("กรุณาเพิ่มรายการเปรียบเทียบอย่างน้อย 1 รายการก่อน");
       document.getElementById('preview-date').innerText = document.getElementById('current-date').innerText;
@@ -311,14 +336,74 @@
       const carReg = document.getElementById('car-reg').value;
       if(!custName || !carReg) return alert("กรุณากรอกชื่อลูกค้าและทะเบียนรถก่อนบันทึก");
 
+      const targetUserId = prompt("กรุณากรอก LINE User ID ของลูกค้าที่ต้องการส่งใบเสนอราคาไปให้:");
+      if (!targetUserId) return;
+
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'saveQuote', quoteData: { agentId: currentAgent.id, customerName: custName, carReg: carReg, items: comparisonItems } })
+        body: JSON.stringify({ 
+          action: 'saveQuote', 
+          quoteData: { 
+            agentId: currentAgent.id, 
+            customerName: custName, 
+            carReg: carReg, 
+            items: comparisonItems,
+            targetUserId: targetUserId
+          } 
+        })
       })
       .then(res => res.json())
       .then(result => {
-        if(result.status === 'success') alert("บันทึกข้อมูลและส่ง Flex Message เข้า LINE เรียบร้อยแล้ว!");
+        if(result.status === 'success') {
+          alert("บันทึกและส่ง Flex Message ให้ลูกค้าเรียบร้อยแล้ว!");
+          loadAgentQuotations();
+        }
+      });
+    }
+
+    function loadAgentQuotations() {
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'getAgentQuotes', agentId: currentAgent.id })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if(result.status === 'success') {
+          const tbody = document.getElementById('quotation-history-body');
+          if(result.quotes.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-gray-400">ยังไม่มีประวัติใบเสนอราคา</td></tr>`;
+            return;
+          }
+          tbody.innerHTML = '';
+          result.quotes.forEach(q => {
+            tbody.innerHTML += `
+              <tr class="border-b">
+                <td class="border p-2">${q.quoteId}</td>
+                <td class="border p-2">${q.date}</td>
+                <td class="border p-2">${q.customerName}</td>
+                <td class="border p-2">${q.carReg}</td>
+                <td class="border p-2 font-semibold text-blue-600">${q.status}</td>
+                <td class="border p-2">
+                  <button onclick="deleteQuote('${q.quoteId}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs">ลบ</button>
+                </td>
+              </tr>`;
+          });
+        }
+      });
+    }
+
+    function deleteQuote(quoteId) {
+      if(!confirm("ต้องการลบใบเสนอราคานี้ใช่หรือไม่?")) return;
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'deleteQuote', quoteId: quoteId })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if(result.status === 'success') loadAgentQuotations();
       });
     }
   </script>
