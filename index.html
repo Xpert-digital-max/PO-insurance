@@ -30,17 +30,16 @@
       <h3 class="font-bold mb-3 text-gray-800">1. เลือกแบบประกันและเงื่อนไขรถยนต์</h3>
       
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
-        <!-- ประเภทประกัน -->
         <select id="ins-type" class="border p-2 rounded w-full">
           <option value="">-- ประเภทประกัน --</option>
-          <option value="ป.1">ประเภท 1 (ป.1)</option>
+          <option value="ป.1 ซ่อมห้าง">ป.1 ซ่อมห้าง</option>
+          <option value="ป.1 ซ่อมอู่">ป.1 ซ่อมอู่</option>
           <option value="ป.2">ประเภท 2 (ป.2)</option>
           <option value="2+">ประเภท 2+ (2+)</option>
           <option value="3">ประเภท 3 (ป.3)</option>
           <option value="3+">ประเภท 3+ (3+)</option>
         </select>
 
-        <!-- ประเภทรถ -->
         <select id="car-type" class="border p-2 rounded w-full">
           <option value="เก๋ง">รถเก๋ง</option>
           <option value="กระบะ">รถกระบะ</option>
@@ -48,25 +47,24 @@
           <option value="อื่นๆ">อื่นๆ</option>
         </select>
 
-        <!-- ทะเบียน กทม / ตจว -->
         <select id="car-location" class="border p-2 rounded w-full">
-          <option value="กทม.">ป้ายทะเบียน กรุงเทพฯ</option>
-          <option value="ต่างจังหวัด">ป้ายทะเบียน ต่างจังหวัด</option>
+          <option value="กทม.">ป้ายทะเบียน กทม.</option>
+          <option value="ตจว.">ป้ายทะเบียน ตจว.</option>
         </select>
 
-        <!-- ทุนประกัน -->
-        <input type="number" id="ins-sum-insured" placeholder="ทุนประกัน (บาท)" class="border p-2 rounded w-full">
+        <input type="text" id="ins-sum-insured" placeholder="ทุนประกัน (เช่น 100000 หรือ ไม่จำกัด)" class="border p-2 rounded w-full">
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-        <!-- บริษัทประกัน (ดึงจาก Google Sheet อัตโนมัติ) -->
-        <select id="ins-company" class="border p-2 rounded w-full">
-          <option value="">-- กำลังโหลดรายชื่อบริษัทฯ --</option>
+        <!-- เมื่อเลือกบริษัท ระบบจะวิ่งไปดึงราคาเบี้ยจาก Sheet มาใส่ช่องเบี้ยให้อัตโนมัติ -->
+        <select id="ins-company" onchange="fetchPresetPremium()" class="border p-2 rounded w-full">
+          <option value="">-- เลือกบริษัทฯ ประกัน --</option>
         </select>
 
         <input type="text" id="ins-plan" placeholder="ระบุแผนประกัน (ถ้ามี)" class="border p-2 rounded w-full">
         
-        <input type="number" id="ins-premium" placeholder="เบี้ยรวมสุทธิ (บาท)" class="border p-2 rounded w-full">
+        <!-- ช่องเบี้ยรวม (ถ้าใน Sheet มีค่า ระบบจะดึงมาใส่ให้ ถ้าไม่มีจะปล่อยว่างให้พิมพ์เอง) -->
+        <input type="number" id="ins-premium" placeholder="เบี้ยรวมสุทธิ (บาท)" class="border p-2 rounded w-full bg-yellow-50">
       </div>
 
       <button onclick="addCompare()" class="w-full bg-blue-600 text-white rounded p-2 font-semibold hover:bg-blue-700 transition">
@@ -152,7 +150,7 @@
           if (result.data && result.data.status === 'Active') {
             currentAgent = result.data;
             document.getElementById('agent-info-display').innerText = `ตัวแทน: ${result.data.name} (ระดับ: ${result.data.level})`;
-            loadCompanies(); // โหลดรายชื่อบริษัทจาก Sheet
+            loadCompanies();
           } else {
             document.getElementById('loading-section').innerHTML = '<h2 class="text-xl font-bold text-yellow-600">รอการอนุมัติสิทธิ์</h2>';
           }
@@ -160,7 +158,6 @@
       });
     }
 
-    // ฟังก์ชันดึงรายชื่อบริษัทมาใส่ Dropdown อัตโนมัติ
     function loadCompanies() {
       fetch(GAS_API_URL, {
         method: 'POST',
@@ -181,6 +178,41 @@
       });
     }
 
+    // ฟังก์ชันดึงเบี้ยอัตโนมัติเมื่อเลือกบริษัทฯ
+    function fetchPresetPremium() {
+      const type = document.getElementById('ins-type').value;
+      const carType = document.getElementById('car-type').value;
+      const location = document.getElementById('car-location').value;
+      const sumInsured = document.getElementById('ins-sum-insured').value;
+      const company = document.getElementById('ins-company').value;
+
+      if(!company || !type) return;
+
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ 
+          action: 'getCommRate', 
+          company: company, 
+          type: type, 
+          carType: carType,
+          location: location,
+          sumInsured: sumInsured,
+          level: currentAgent.level 
+        })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if(result.status === 'success' && result.data.grossPremium > 0) {
+          // ถ้าในชีตมีตั้งราคาไว้ ดึงมาใส่ช่องเบี้ยทันที
+          document.getElementById('ins-premium').value = result.data.grossPremium;
+        } else {
+          // ถ้าไม่มีหรือเป็น 0 ให้ปล่อยว่างเพื่อให้ตัวแทนพิมพ์กรอกเอง
+          document.getElementById('ins-premium').value = '';
+        }
+      });
+    }
+
     function addCompare() {
       const type = document.getElementById('ins-type').value;
       const carType = document.getElementById('car-type').value;
@@ -191,11 +223,10 @@
       const premium = document.getElementById('ins-premium').value;
 
       if(!type || !company || !premium) {
-        alert("กรุณาเลือกประเภท บริษัท และกรอกเบี้ยประกันให้ครบถ้วน");
+        alert("กรุณาเลือกประเภท บริษัท และระบุเบี้ยประกันให้ครบถ้วน");
         return;
       }
 
-      // ส่งเงื่อนไขทั้งหมดไปเช็คเรทค่าคอม
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -205,12 +236,13 @@
           type: type, 
           carType: carType,
           location: location,
+          sumInsured: sumInsured,
           level: currentAgent.level 
         })
       })
       .then(res => res.json())
       .then(result => {
-        const rate = (result.status === 'success') ? result.rate : 0;
+        const rate = (result.status === 'success') ? result.data.rate : 0;
         const commAmount = (parseFloat(premium) * (rate / 100)).toFixed(2);
 
         const tbody = document.getElementById('compare-table-body');
@@ -222,7 +254,7 @@
         tr.innerHTML = `
           <td class="border p-2">${company}</td>
           <td class="border p-2">${type} ${plan ? '('+plan+')' : ''}<br><span class="text-xs text-gray-500">${carType} / ${location}</span></td>
-          <td class="border p-2">${sumInsured ? Number(sumInsured).toLocaleString() : '-'}</td>
+          <td class="border p-2">${sumInsured ? Number(sumInsured).toLocaleString() : 'ไม่จำกัด'}</td>
           <td class="border p-2 font-semibold">${Number(premium).toLocaleString()}</td>
           <td class="border p-2 text-red-600 agent-only">${rate}%</td>
           <td class="border p-2 text-red-600 font-bold agent-only">${Number(commAmount).toLocaleString()}</td>
