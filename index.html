@@ -173,8 +173,32 @@
     let comparisonItems = [];
     let availablePlansCache = [];
     let editingQuoteId = null;
-    const LIFF_ID = "2009043114-HC6s2Lkm"; 
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzhLC4eCwMshx8BacjOr-4lY9eMKXc-Ilx_HB03Nx_0mxyM3drSnibQUy9jnjLNc0El/exec"; 
+
+    // 1. กำหนดค่าของแต่ละบัญชี LINE OA (แยกตาม Account Key)
+    const ACCOUNT_CONFIGS = {
+      "FFB": {
+        liffId: "2009043114-HC6s2Lkm",
+        gasUrl: "https://script.google.com/macros/s/AKfycbzhLC4eCwMshx8BacjOr-4lY9eMKXc-Ilx_HB03Nx_0mxyM3drSnibQUy9jnjLNc0El/exec"
+      },
+      "shopB": {
+        liffId: "ใส่_LIFF_ID_ของบัญชี_B_ที่นี่",
+        gasUrl: "ใส่_Web_App_URL_ของบัญชี_B_ที่นี่"
+      },
+      "shopC": {
+        liffId: "ใส่_LIFF_ID_ของบัญชี_C_ที่นี่",
+        gasUrl: "ใส่_Web_App_URL_ของบัญชี_C_ที่นี่"
+      }
+    };
+
+    // 2. ดึงค่า account จากลิงก์ (ถ้าไม่มีให้ใช้ FFB เป็นค่าเริ่มต้น)
+    const urlParams = new URLSearchParams(window.location.search);
+    const accountKey = urlParams.get('account') || 'FFB';
+    
+    // 3. กำหนดค่า LIFF_ID และ GAS_API_URL ตามบัญชีที่เปิดใช้งาน
+    const currentConfig = ACCOUNT_CONFIGS[accountKey] || ACCOUNT_CONFIGS["FFB"];
+    const LIFF_ID = currentConfig.liffId; 
+    const GAS_API_URL = currentConfig.gasUrl; 
+  </script>; 
 
     window.onload = () => {
       const n = new Date();
