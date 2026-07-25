@@ -25,7 +25,7 @@
       <span id="agent-info-display" class="text-sm text-gray-700 font-semibold bg-blue-50 px-3 py-1 rounded border border-blue-200"></span>
     </div>
 
-    <!-- 1. ส่วนเลือกเงื่อนไข (สลับแผนขึ้นบน ทุนลงล่าง ดึงข้อมูลอัตโนมัติ) -->
+    <!-- 1. ส่วนเลือกเงื่อนไข -->
     <div class="mb-6 p-4 bg-gray-50 rounded border no-print">
       <h3 class="font-bold mb-3 text-gray-800">1. เลือกแบบประกันและเงื่อนไขรถยนต์</h3>
       
@@ -57,15 +57,12 @@
           <option value="">-- เลือกบริษัทฯ ประกัน --</option>
         </select>
 
-        <!-- แผนประกัน (Dropdown ดึงจาก Sheet) -->
         <select id="ins-plan" onchange="onPlanSelected()" class="border p-2 rounded w-full">
           <option value="">-- เลือกแผนประกัน --</option>
         </select>
 
-        <!-- ทุนประกัน (แสดงอัตโนมัติ) -->
         <input type="text" id="ins-sum-insured" placeholder="ทุนประกัน" class="border p-2 rounded w-full bg-gray-100" readonly>
         
-        <!-- เบี้ยรวมสุทธิ -->
         <input type="number" id="ins-premium" placeholder="เบี้ยรวมสุทธิ (บาท)" class="border p-2 rounded w-full bg-yellow-50">
       </div>
 
@@ -74,7 +71,7 @@
       </button>
     </div>
 
-    <!-- 2. ตารางเปรียบเทียบ (แสดงยอดค่าคอมขั้นบันได) -->
+    <!-- 2. ตารางเปรียบเทียบ -->
     <div class="mb-6">
       <h3 class="font-bold mb-3 text-gray-800">2. ตารางเปรียบเทียบเบี้ยประกันและค่าคอมมิชชัน</h3>
       <div class="overflow-x-auto">
@@ -234,7 +231,6 @@
       });
     }
 
-    // ดึงแผนประกันมาใส่ Dropdown อัตโนมัติ
     function fetchPlans() {
       const type = document.getElementById('ins-type').value;
       const carType = document.getElementById('car-type').value;
@@ -260,7 +256,6 @@
       });
     }
 
-    // เมื่อเลือกแผนประกัน ดึงทุนและเบี้ยมาใส่ทันที
     function onPlanSelected() {
       const idx = document.getElementById('ins-plan').value;
       if(idx === "") return;
