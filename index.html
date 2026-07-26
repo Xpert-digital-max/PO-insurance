@@ -188,12 +188,13 @@
       })
       .then(res => res.json())
       .then(config => {
-        if (config && config.status === 'success') {
+        // เช็คว่ามี liffId และ gasUrl กลับมาหรือไม่ ถ้ามีให้รันต่อทันที
+        if (config && config.liffId && config.gasUrl) {
           LIFF_ID = config.liffId;
           GAS_API_URL = config.gasUrl;
-          startLiffApp(); // รันต่อได้ปกติทันที
+          startLiffApp();
         } else {
-          alert("ไม่พบข้อมูลการตั้งค่าในระบบ");
+          alert("ไม่พบข้อมูลการตั้งค่าในระบบ กรุณาตรวจสอบแท็บ Settings ใน Google Sheet");
         }
       })
       .catch(err => {
@@ -201,12 +202,6 @@
         alert("ไม่สามารถเชื่อมต่อระบบกลางได้");
       });
     }
-
-    window.onload = () => {
-      const n = new Date();
-      document.getElementById('current-date').innerText = `${n.getDate()}/${n.getMonth()+1}/${n.getFullYear()+543}`;
-      initSystemConfig();
-    };
 
     function startLiffApp() {
       liff.init({ liffId: LIFF_ID }).then(() => {
