@@ -62,7 +62,6 @@
         </select>
 
         <input type="text" id="ins-sum-insured" placeholder="ทุนประกัน (พิมพ์กรอกเองได้)" class="border p-2 rounded w-full bg-white">
-        
         <input type="number" id="ins-premium" placeholder="เบี้ยรวมสุทธิ (บาท)" class="border p-2 rounded w-full bg-yellow-50">
       </div>
 
@@ -160,8 +159,9 @@
         <div class="text-center text-xs text-gray-400 mt-8">เอกสารนี้จัดทำขึ้นเพื่อการเสนอราคาเบี้ยประกันภัยเท่านั้น</div>
       </div>
 
-      <div class="flex gap-3 mt-4">
-        <button onclick="downloadPDF()" class="w-full bg-red-600 text-white py-2 rounded font-bold hover:bg-red-700">📥 ยืนยันดาวน์โหลด PDF</button>
+      <div class="flex flex-col md:flex-row gap-2 mt-4">
+        <button onclick="downloadPDF()" class="w-full bg-red-600 text-white py-2 rounded font-bold hover:bg-red-700">📥 บันทึกเป็น PDF</button>
+        <button onclick="window.print()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700">🖨️ สั่งปริ้นเอกสาร</button>
         <button onclick="closePreview()" class="w-full bg-gray-300 text-gray-700 py-2 rounded font-bold hover:bg-gray-400">ปิดหน้าต่าง</button>
       </div>
     </div>
@@ -176,14 +176,10 @@
     let GAS_API_URL = "";
     let LIFF_ID = "";
 
-    // 1. อ่านค่า account จากลิงก์ (เช่น ?account=ร้านหนึ่ง ถ้าไม่มีให้ใช้ FFB)
     const urlParams = new URLSearchParams(window.location.search);
     const accountKey = urlParams.get('account') || 'FFB';
-
-    // กำหนด URL ของ GAS กลาง สำหรับใช้ดึง Config ตั้งต้น
     const CENTRAL_GAS_URL = "https://script.google.com/macros/s/AKfycbzhLC4eCwMshx8BacjOr-4lY9eMKXc-Ilx_HB03Nx_0mxyM3drSnibQUy9jnjLNc0El/exec";
 
-    // 2. ฟังก์ชันดึงค่า LIFF ID และ GAS URL จากแท็บ Settings ใน Google Sheet
     function initSystemConfig() {
       fetch(CENTRAL_GAS_URL, {
         method: 'POST',
@@ -195,8 +191,6 @@
         if (config.status === 'success') {
           LIFF_ID = config.liffId;
           GAS_API_URL = config.gasUrl;
-          
-          // เริ่มต้นรันระบบ LIFF หลังจากได้ค่า Config มาแล้ว
           startLiffApp();
         } else {
           alert("ไม่พบข้อมูลการตั้งค่าของบัญชีนี้ในระบบ");
@@ -211,8 +205,6 @@
     window.onload = () => {
       const n = new Date();
       document.getElementById('current-date').innerText = `${n.getDate()}/${n.getMonth()+1}/${n.getFullYear()+543}`;
-      
-      // เรียกโหลดค่า Config จากชีตก่อนเป็นอันดับแรก
       initSystemConfig();
     };
 
@@ -309,7 +301,6 @@
       const location = document.getElementById('car-location').value;
       const sumInsured = document.getElementById('ins-sum-insured').value;
       const company = document.getElementById('ins-company').value;
-      
       const planIdx = document.getElementById('ins-plan').value;
       const plan = planIdx !== "" ? availablePlansCache[planIdx].plan : document.getElementById('ins-plan').value;
       const premium = document.getElementById('ins-premium').value;
@@ -366,14 +357,15 @@
     function openPreview() {
       if(comparisonItems.length === 0) return alert("กรุณาเพิ่มรายการเปรียบเทียบอย่างน้อย 1 รายการก่อน");
       document.getElementById('preview-date').innerText = document.getElementById('current-date').innerText;
-      document.getElementById('preview-agent').innerText = currentAgent.name;
+      document.getElementById('preview-agent').innerText = currentAgent ? `${currentAgent.name} (Tier: ${currentAgent.level})` : '-';
       document.getElementById('preview-cust').innerText = document.getElementById('cust-name').value || '-';
       document.getElementById('preview-car').innerText = (document.getElementById('car-reg').value || '-') + ' (' + (document.getElementById('car-model').value || '-') + ')';
 
       let tableHtml = `<table class="w-full border-collapse border text-xs text-center bg-white">
         <tr class="bg-gray-200"><th class="border p-1">บริษัท</th><th class="border p-1">แผนประกัน</th><th class="border p-1">ทุนประกัน</th><th class="border p-1">เบี้ยรวมสุทธิ</th></tr>`;
       comparisonItems.forEach(i => {
-        tableHtml += `<tr><td class="border p-1">${i.company}</td><td class="border p-1">${i.type} ${i.plan? '('+i.plan+')':''}</td><td class="border p-1">${i.sumInsured}</td><td class="border p-1 font-bold">${Number(i.premium).toLocaleString()} บาท</td></tr>`;
+        let sInsured = i.sumInsured ? Number(i.sumInsured).toLocaleString() + " บาท" : "-";
+        tableHtml += `<tr><td class="border p-1">${i.company}</td><td class="border p-1">${i.type} ${i.plan? '('+i.plan+')':''}</td><td class="border p-1">${sInsured}</td><td class="border p-1 font-bold">${Number(i.premium).toLocaleString()} บาท</td></tr>`;
       });
       tableHtml += `</table>`;
       document.getElementById('preview-table-container').innerHTML = tableHtml;
@@ -431,6 +423,7 @@
     }
 
     function loadAgentQuotations() {
+      if (!currentAgent || !currentAgent.id) return;
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -473,7 +466,7 @@
         comparisonItems = JSON.parse(q.details) || [];
       } catch(e) { comparisonItems = []; }
       
-      // บันทึก agentId ของใบเสนอราคาเดิมเก็บไว้ด้วย เพื่อให้ตอนกดบันทึกซ้ำ ส่งข้อมูลตัวแทนไปครบถ้วน
+      // ผูก agentId กลับเข้าตัวแปร currentAgent เพื่อให้ตอนกดบันทึกซ้ำ ส่งข้อมูลตัวแทนไปครบถ้วน
       if (q.agentId) {
         if (!currentAgent) currentAgent = {};
         currentAgent.id = q.agentId;
