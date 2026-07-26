@@ -174,7 +174,7 @@
     let availablePlansCache = [];
     let editingQuoteId = null;
     let GAS_API_URL = "";
-    let LIFF_ID = "2009043114-HC6s2Lkm"; // ใส่ค่าสำรองฉุกเฉินป้องกันค้าง
+    let LIFF_ID = "2009043114-HC6s2Lkm";
 
     const urlParams = new URLSearchParams(window.location.search);
     const accountKey = urlParams.get('account') || 'FFB';
@@ -201,7 +201,7 @@
         startLiffApp();
       })
       .catch(err => {
-        console.warn("ใช้ค่าสำรองฉุกเฉินเนื่องจากดึง Config ไม่สำเร็จ");
+        console.warn("ใช้ค่าสำรองฉุกเฉิน");
         GAS_API_URL = CENTRAL_GAS_URL;
         startLiffApp();
       });
@@ -218,8 +218,7 @@
           });
         }
       }).catch(err => {
-        console.error("LIFF Initialization failed", err);
-        // กรณีเทสบนเว็บนอก LINE ให้จำลอง UID หรือข้ามไปก่อนได้
+        console.error("LIFF Init failed, testing mode active");
         currentUserLineId = "U10a5215bdc8d6bc2235d4afa7dc485c4"; 
         checkAgentStatus(currentUserLineId);
       });
