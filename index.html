@@ -186,20 +186,31 @@
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'getConfig', accountKey: accountKey })
       })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
       .then(config => {
-        // เช็คว่ามี liffId และ gasUrl กลับมาหรือไม่ ถ้ามีให้รันต่อทันที
+        // เช็คว่ามีค่า liffId และ gasUrl หรือไม่ ถ้ามีให้ไปต่อ
         if (config && config.liffId && config.gasUrl) {
           LIFF_ID = config.liffId;
           GAS_API_URL = config.gasUrl;
           startLiffApp();
         } else {
-          alert("ไม่พบข้อมูลการตั้งค่าในระบบ กรุณาตรวจสอบแท็บ Settings ใน Google Sheet");
+          // ถ้าข้อมูลข้างในว่าง ให้ใช้ค่าสำรอง (Fallback) ของ FFB ทันทีเพื่อไม่ให้ค้าง
+          console.warn("ไม่พบค่า Config กำลังใช้ค่าเริ่มต้น");
+          // กำหนดค่าตายตัวสำรองฉุกเฉินตรงนี้ได้เลย (เอา LIFF ID และ URL ของ FFB มาใส่กันตาย)
+          LIFF_ID = "2009043114-HC6s2Lkm"; 
+          GAS_API_URL = "https://script.google.com/macros/s/AKfycbzhLC4eCwMshx8BacjOr-4lY9eMKXc-Ilx_HB03Nx_0mxyM3drSnibQUy9jnjLNc0El/exec";
+          startLiffApp();
         }
       })
       .catch(err => {
         console.error("Config Error: ", err);
-        alert("ไม่สามารถเชื่อมต่อระบบกลางได้");
+        // หากเชื่อมต่อไม่ได้ ให้ดึงค่า FFB มาทำงานต่อทันที ไม่ให้หน้าจอค้างหมุนค้าง
+        LIFF_ID = "2009043114-HC6s2Lkm";
+        GAS_API_URL = "https://script.google.com/macros/s/AKfycbzhLC4eCwMshx8BacjOr-4lY9eMKXc-Ilx_HB03Nx_0mxyM3drSnibQUy9jnjLNc0El/exec";
+        startLiffApp();
       });
     }
 
