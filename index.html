@@ -188,16 +188,12 @@
       })
       .then(res => res.json())
       .then(config => {
-        // เช็คว่ามีค่า liffId กลับมาไหม ถ้าไม่มีให้บังคับใช้ค่าของ FFB แทนเพื่อไม่ให้ระบบค้าง
-        if (config && config.status === 'success' && config.liffId) {
+        if (config && config.status === 'success') {
           LIFF_ID = config.liffId;
           GAS_API_URL = config.gasUrl;
-          startLiffApp();
+          startLiffApp(); // รันต่อได้ปกติทันที
         } else {
-          // หากหาไม่เจอจริงๆ ให้เด้งเตือนและใช้ค่าเริ่มต้นสำรอง
-          console.warn("ไม่พบ Account Key นี้ ระบบจะใช้ค่าเริ่มต้นแทน");
-          // กำหนดค่าสำรองฉุกเฉินตรงนี้ได้ หรือแจ้งเตือนผู้ใช้
-          alert("ไม่พบข้อมูลการตั้งค่าบัญชี: " + accountKey + " กรุณาตรวจสอบลิงก์ LIFF");
+          alert("ไม่พบข้อมูลการตั้งค่าในระบบ");
         }
       })
       .catch(err => {
