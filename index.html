@@ -173,36 +173,50 @@
     let comparisonItems = [];
     let availablePlansCache = [];
     let editingQuoteId = null;
+    let GAS_API_URL = "";
+    let LIFF_ID = "";
 
-    // 1. กำหนดค่าของแต่ละบัญชี LINE OA (แยกตาม Account Key)
-    const ACCOUNT_CONFIGS = {
-      "FFB": {
-        liffId: "2009043114-HC6s2Lkm",
-        gasUrl: "https://script.google.com/macros/s/AKfycbzhLC4eCwMshx8BacjOr-4lY9eMKXc-Ilx_HB03Nx_0mxyM3drSnibQUy9jnjLNc0El/exec"
-      },
-      "shopB": {
-        liffId: "ใส่_LIFF_ID_ของบัญชี_B_ที่นี่",
-        gasUrl: "ใส่_Web_App_URL_ของบัญชี_B_ที่นี่"
-      },
-      "shopC": {
-        liffId: "ใส่_LIFF_ID_ของบัญชี_C_ที่นี่",
-        gasUrl: "ใส่_Web_App_URL_ของบัญชี_C_ที่นี่"
-      }
-    };
-
-    // 2. ดึงค่า account จากลิงก์ (ถ้าไม่มีให้ใช้ FFB เป็นค่าเริ่มต้น)
+    // 1. อ่านค่า account จากลิงก์ (เช่น ?account=ร้านหนึ่ง ถ้าไม่มีให้ใช้ FFB)
     const urlParams = new URLSearchParams(window.location.search);
     const accountKey = urlParams.get('account') || 'FFB';
-    
-    // 3. กำหนดค่า LIFF_ID และ GAS_API_URL ตามบัญชีที่เปิดใช้งาน
-    const currentConfig = ACCOUNT_CONFIGS[accountKey] || ACCOUNT_CONFIGS["FFB"];
-    const LIFF_ID = currentConfig.liffId; 
-    const GAS_API_URL = currentConfig.gasUrl; 
+
+    // กำหนด URL ของ GAS กลาง สำหรับใช้ดึง Config ตั้งต้น
+    const CENTRAL_GAS_URL = "ใส่_URL_Web_App_ของ_Google_Sheet_กลาง_ที่นี่";
+
+    // 2. ฟังก์ชันดึงค่า LIFF ID และ GAS URL จากแท็บ Settings ใน Google Sheet
+    function initSystemConfig() {
+      fetch(CENTRAL_GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'getConfig', accountKey: accountKey })
+      })
+      .then(res => res.json())
+      .then(config => {
+        if (config.status === 'success') {
+          LIFF_ID = config.liffId;
+          GAS_API_URL = config.gasUrl;
+          
+          // เริ่มต้นรันระบบ LIFF หลังจากได้ค่า Config มาแล้ว
+          startLiffApp();
+        } else {
+          alert("ไม่พบข้อมูลการตั้งค่าของบัญชีนี้ในระบบ");
+        }
+      })
+      .catch(err => {
+        console.error("Config Error: ", err);
+        alert("ไม่สามารถเชื่อมต่อระบบกลางได้");
+      });
+    }
 
     window.onload = () => {
       const n = new Date();
       document.getElementById('current-date').innerText = `${n.getDate()}/${n.getMonth()+1}/${n.getFullYear()+543}`;
+      
+      // เรียกโหลดค่า Config จากชีตก่อนเป็นอันดับแรก
+      initSystemConfig();
+    };
 
+    function startLiffApp() {
       liff.init({ liffId: LIFF_ID }).then(() => {
         if (!liff.isLoggedIn()) {
           liff.login();
@@ -212,8 +226,10 @@
             checkAgentStatus(currentUserLineId);
           });
         }
+      }).catch(err => {
+        console.error("LIFF Initialization failed", err);
       });
-    };
+    }
 
     function checkAgentStatus(uid) {
       fetch(GAS_API_URL, {
