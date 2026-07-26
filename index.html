@@ -472,6 +472,13 @@
       try {
         comparisonItems = JSON.parse(q.details) || [];
       } catch(e) { comparisonItems = []; }
+      
+      // บันทึก agentId ของใบเสนอราคาเดิมเก็บไว้ด้วย เพื่อให้ตอนกดบันทึกซ้ำ ส่งข้อมูลตัวแทนไปครบถ้วน
+      if (q.agentId) {
+        if (!currentAgent) currentAgent = {};
+        currentAgent.id = q.agentId;
+      }
+
       renderTable();
       alert(`กำลังโหลดใบเสนอราคา ${q.quoteId} เพื่อแก้ไข`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
