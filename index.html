@@ -174,11 +174,17 @@
     let availablePlansCache = [];
     let editingQuoteId = null;
     let GAS_API_URL = "";
-    let LIFF_ID = "";
+    let LIFF_ID = "2009043114-HC6s2Lkm"; // ใส่ค่าสำรองฉุกเฉินป้องกันค้าง
 
     const urlParams = new URLSearchParams(window.location.search);
     const accountKey = urlParams.get('account') || 'FFB';
     const CENTRAL_GAS_URL = "https://script.google.com/macros/s/AKfycbzhLC4eCwMshx8BacjOr-4lY9eMKXc-Ilx_HB03Nx_0mxyM3drSnibQUy9jnjLNc0El/exec";
+
+    window.onload = () => {
+      const n = new Date();
+      document.getElementById('current-date').innerText = `${n.getDate()}/${n.getMonth()+1}/${n.getFullYear()+543}`;
+      initSystemConfig();
+    };
 
     function initSystemConfig() {
       fetch(CENTRAL_GAS_URL, {
@@ -186,30 +192,17 @@
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'getConfig', accountKey: accountKey })
       })
-      .then(res => {
-        if (!res.ok) throw new Error('Network response was not ok');
-        return res.json();
-      })
+      .then(res => res.json())
       .then(config => {
-        // เช็คว่ามีค่า liffId และ gasUrl หรือไม่ ถ้ามีให้ไปต่อ
         if (config && config.liffId && config.gasUrl) {
           LIFF_ID = config.liffId;
           GAS_API_URL = config.gasUrl;
-          startLiffApp();
-        } else {
-          // ถ้าข้อมูลข้างในว่าง ให้ใช้ค่าสำรอง (Fallback) ของ FFB ทันทีเพื่อไม่ให้ค้าง
-          console.warn("ไม่พบค่า Config กำลังใช้ค่าเริ่มต้น");
-          // กำหนดค่าตายตัวสำรองฉุกเฉินตรงนี้ได้เลย (เอา LIFF ID และ URL ของ FFB มาใส่กันตาย)
-          LIFF_ID = "2009043114-HC6s2Lkm"; 
-          GAS_API_URL = "https://script.google.com/macros/s/AKfycbzhLC4eCwMshx8BacjOr-4lY9eMKXc-Ilx_HB03Nx_0mxyM3drSnibQUy9jnjLNc0El/exec";
-          startLiffApp();
         }
+        startLiffApp();
       })
       .catch(err => {
-        console.error("Config Error: ", err);
-        // หากเชื่อมต่อไม่ได้ ให้ดึงค่า FFB มาทำงานต่อทันที ไม่ให้หน้าจอค้างหมุนค้าง
-        LIFF_ID = "2009043114-HC6s2Lkm";
-        GAS_API_URL = "https://script.google.com/macros/s/AKfycbzhLC4eCwMshx8BacjOr-4lY9eMKXc-Ilx_HB03Nx_0mxyM3drSnibQUy9jnjLNc0El/exec";
+        console.warn("ใช้ค่าสำรองฉุกเฉินเนื่องจากดึง Config ไม่สำเร็จ");
+        GAS_API_URL = CENTRAL_GAS_URL;
         startLiffApp();
       });
     }
@@ -226,6 +219,9 @@
         }
       }).catch(err => {
         console.error("LIFF Initialization failed", err);
+        // กรณีเทสบนเว็บนอก LINE ให้จำลอง UID หรือข้ามไปก่อนได้
+        currentUserLineId = "U10a5215bdc8d6bc2235d4afa7dc485c4"; 
+        checkAgentStatus(currentUserLineId);
       });
     }
 
@@ -472,7 +468,6 @@
         comparisonItems = JSON.parse(q.details) || [];
       } catch(e) { comparisonItems = []; }
       
-      // ผูก agentId กลับเข้าตัวแปร currentAgent เพื่อให้ตอนกดบันทึกซ้ำ ส่งข้อมูลตัวแทนไปครบถ้วน
       if (q.agentId) {
         if (!currentAgent) currentAgent = {};
         currentAgent.id = q.agentId;
