@@ -162,7 +162,7 @@
       <!-- ปุ่มจัดการอยู่ในหน้าต่าง A4 เรียบร้อย -->
       <div class="flex flex-col md:flex-row gap-2 mt-4">
         <button onclick="downloadPDF()" class="w-full bg-red-600 text-white py-2 rounded font-bold hover:bg-red-700">📥 บันทึกเป็น PDF</button>
-        <button onclick="window.print()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700">🖨️ สั่งปริ้นเอกสาร</button>
+        <button onclick="window.open(window.location.href, '_blank')" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700">🖨️ สั่งปริ้นเอกสาร</button>
         <button onclick="closePreview()" class="w-full bg-gray-300 text-gray-700 py-2 rounded font-bold hover:bg-gray-400">ปิดหน้าต่าง</button>
       </div>
     </div>
@@ -379,8 +379,26 @@
 
     function downloadPDF() {
       const element = document.getElementById('a4-document');
-      const opt = { margin: 0.3, filename: 'Quotation-A4.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'A4', orientation: 'portrait' } };
-      html2pdf().set(opt).from(element).save().then(() => closePreview());
+      
+      // ใช้ html2canvas แปลงเอกสาร A4 เป็นรูปภาพ แล้วดาวน์โหลดหรือแชร์ทันทีในมือถือ
+      html2pdf().set({
+        margin: 0.3,
+        filename: 'Quotation-Insurance.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'A4', orientation: 'portrait' }
+      }).outputPdf('datauristring', function(pdfDataUri) {
+        // สร้างลิงก์ดาวน์โหลดสำรองสำหรับมือถือ
+        var downloadLink = document.createElement('a');
+        downloadLink.href = pdfDataUri;
+        downloadLink.download = "Quotation-Insurance.pdf";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+      }).catch(err => {
+        // หากมือถือบล็อก ให้เปิดหน้าต่างพิมพ์ภาพแทนเพื่อให้ผู้ใช้แคปหน้าจอหรือเซฟรูปได้
+        window.print();
+      });
     }
 
     function saveAndSendLINE() {
