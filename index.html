@@ -10,9 +10,39 @@
 </head>
 <body class="bg-gray-100 p-4 md:p-6">
 
+  <!-- ส่วนกำลังโหลด -->
   <div id="loading-section" class="max-w-md mx-auto mt-20 text-center">
     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-    <p class="text-gray-600 font-semibold" id="loading-text">กำลังโหลดข้อมูลระบบ...</p>
+    <p class="text-gray-600 font-semibold" id="loading-text">กำลังตรวจสอบสิทธิ์ระบบ...</p>
+  </div>
+
+  <!-- ส่วนฟอร์มลงทะเบียน (เด้งขึ้นมาอัตโนมัติถ้ายังไม่เคยลงทะเบียน) -->
+  <div id="register-section" class="hidden max-w-md mx-auto bg-white p-6 rounded shadow mt-10">
+    <h2 class="text-xl font-bold text-blue-800 mb-2 text-center">ลงทะเบียนตัวแทนใหม่</h2>
+    <p class="text-xs text-gray-500 mb-4 text-center">กรุณากรอกข้อมูลเพื่อขออนุมัติใช้งานระบบ</p>
+    <div class="space-y-3">
+      <div>
+        <label class="text-xs font-bold text-gray-700">ชื่อ - นามสกุล</label>
+        <input type="text" id="reg-name" placeholder="ระบุชื่อ-นามสกุลจริง" class="border p-2 rounded w-full text-sm mt-1">
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-700">เบอร์โทรศัพท์</label>
+        <input type="tel" id="reg-phone" placeholder="เบอร์โทรติดต่อ" class="border p-2 rounded w-full text-sm mt-1">
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-700">LINE User ID ของคุณ</label>
+        <input type="text" id="reg-uid" readonly class="border p-2 rounded w-full text-sm bg-gray-100 text-gray-500 mt-1">
+      </div>
+      <button onclick="submitRegistration()" class="w-full bg-green-600 text-white p-2 rounded font-bold hover:bg-green-700 mt-2">
+        1️⃣ ส่งคำขอลงทะเบียน
+      </button>
+    </div>
+  </div>
+
+  <!-- ส่วนรอนุมัติสิทธิ์ -->
+  <div id="pending-section" class="hidden max-w-md mx-auto bg-white p-6 rounded shadow mt-10 text-center">
+    <h2 class="text-xl font-bold text-yellow-600 mb-2">⏳ ส่งคำขอลงทะเบียนเรียบร้อย</h2>
+    <p class="text-sm text-gray-600">กรุณารอผู้ดูแลระบบตรวจสอบและอนุมัติสิทธิ์ในระบบ จึงจะสามารถใช้งานได้ครับ</p>
   </div>
 
   <div id="app-section" class="hidden max-w-4xl mx-auto bg-white p-6 rounded shadow mt-2">
@@ -159,13 +189,11 @@
         <div class="text-center text-xs text-gray-400 mt-8">เอกสารนี้จัดทำขึ้นเพื่อการเสนอราคาเบี้ยประกันภัยเท่านั้น</div>
       </div>
 
-      <!-- ส่วนแสดงรูปภาพแปลงร่าง (สำหรับกดค้างบันทึกหรือแชร์ในมือถือ) -->
       <div id="image-preview-container" class="hidden mt-4 text-center">
         <p class="text-xs text-green-600 font-bold mb-2">👇 กดค้างที่รูปภาพด้านล่างเพื่อ "บันทึกภาพ" หรือ "แชร์ต่อ" ได้เลยครับ</p>
         <div id="image-output" class="border p-2 rounded bg-gray-50 flex justify-center"></div>
       </div>
 
-      <!-- ปุ่มจัดการในหน้าต่าง A4 -->
       <div class="flex flex-col md:flex-row gap-2 mt-4">
         <button onclick="convertA4ToImage()" class="w-full bg-red-600 text-white py-2 rounded font-bold hover:bg-red-700">📥 แปลงตารางเป็นรูปภาพ (เซฟ/แชร์)</button>
         <button onclick="closePreview()" class="w-full bg-gray-300 text-gray-700 py-2 rounded font-bold hover:bg-gray-400">ปิดหน้าต่าง</button>
@@ -237,13 +265,45 @@
       })
       .then(res => res.json())
       .then(result => {
-        if(result.status === 'success' && result.data && result.data.status === 'Active') {
+        document.getElementById('loading-section').classList.add('hidden');
+        
+        if (result.status === 'success' && result.data) {
           currentAgent = result.data;
-          document.getElementById('agent-info-display').innerText = `ตัวแทน: ${result.data.name} (ระดับ: ${result.data.level})`;
-          loadCompanies();
-          loadAgentQuotations();
+          if (currentAgent.status === 'Active') {
+            document.getElementById('agent-info-display').innerText = `ตัวแทน: ${currentAgent.name} (ระดับ: ${currentAgent.level})`;
+            document.getElementById('app-section').classList.remove('hidden');
+            loadCompanies();
+            loadAgentQuotations();
+          } else {
+            document.getElementById('pending-section').classList.remove('hidden');
+          }
         } else {
-          document.getElementById('loading-section').innerHTML = '<h2 class="text-xl font-bold text-yellow-600">รอการอนุมัติสิทธิ์</h2>';
+          // ถ้าไม่พบข้อมูลในระบบเลย -> เด้งเปิดฟอร์มลงทะเบียนอัตโนมัติ
+          document.getElementById('reg-uid').value = uid;
+          document.getElementById('register-section').classList.remove('hidden');
+        }
+      });
+    }
+
+    function submitRegistration() {
+      const name = document.getElementById('reg-name').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      if(!name || !phone) return alert("กรุณากรอกชื่อและเบอร์โทรศัพท์ให้ครบถ้วน");
+
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ 
+          action: 'register', 
+          formData: { name: name, phone: phone, uid: currentUserLineId } 
+        })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if(result.status === 'success') {
+          document.getElementById('register-section').classList.add('hidden');
+          document.getElementById('pending-section').classList.remove('hidden');
+          alert("ส่งคำขอลงทะเบียนสำเร็จ!");
         }
       });
     }
@@ -262,8 +322,6 @@
           result.companies.forEach(comp => {
             select.innerHTML += `<option value="${comp}">${comp}</option>`;
           });
-          document.getElementById('loading-section').classList.add('hidden');
-          document.getElementById('app-section').classList.remove('hidden');
         }
       });
     }
@@ -376,7 +434,6 @@
       tableHtml += `</table>`;
       document.getElementById('preview-table-container').innerHTML = tableHtml;
       
-      // ซ่อนภาพเก่าและเคลียร์ค่าเมื่อเปิด Modal ใหม่
       document.getElementById('image-preview-container').classList.add('hidden');
       document.getElementById('image-output').innerHTML = '';
       
@@ -387,7 +444,6 @@
       document.getElementById('pdf-preview-modal').classList.add('hidden');
     }
 
-    // ฟังก์ชันแปลง A4 เป็นรูปภาพให้กดค้างบันทึกบนมือถือ
     function convertA4ToImage() {
       const element = document.getElementById('a4-document');
       html2canvas(element, { scale: 2, useCORS: true }).then(canvas => {
