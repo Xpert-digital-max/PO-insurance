@@ -448,16 +448,25 @@
       const element = document.getElementById('a4-document');
       html2canvas(element, { scale: 2, useCORS: true }).then(canvas => {
         const imgData = canvas.toDataURL("image/png");
+        
+        // 🟢 เปลี่ยนวิธีแสดงผลเพื่อให้มือถือเซฟรูปได้
+        const outputDiv = document.getElementById('image-output');
+        outputDiv.innerHTML = '';
+        
         const imgElement = document.createElement('img');
         imgElement.src = imgData;
         imgElement.style.maxWidth = '100%';
         imgElement.style.borderRadius = '8px';
+        imgElement.style.border = '1px solid #ccc';
         
-        const outputDiv = document.getElementById('image-output');
-        outputDiv.innerHTML = '';
         outputDiv.appendChild(imgElement);
         
+        // แสดงกล่องรูปภาพขึ้นมา
         document.getElementById('image-preview-container').classList.remove('hidden');
+
+        // แจ้งเตือนสั้นๆ ให้ผู้ใช้ทราบวิธีบันทึกบนมือถือ
+        alert("แปลงภาพสำเร็จ! กรุณากดค้างที่รูปภาพด้านล่างเพื่อบันทึกภาพลงมือถือครับ");
+        
       }).catch(err => {
         alert("ไม่สามารถแปลงตารางเป็นรูปภาพได้ กรุณาลองใหม่อีกครั้ง");
       });
