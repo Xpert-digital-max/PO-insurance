@@ -385,7 +385,7 @@
       document.getElementById('ins-sum-insured').value = selected.sumInsured;
       document.getElementById('ins-premium').value = selected.grossPremium > 0 ? selected.grossPremium : '';
       
-      // ดึง Location ของแผนที่เลือกมาแสดงทันที
+      // 🟢 ดึง Location จากแผนที่เลือกมาใส่ในช่อง Location ให้อัตโนมัติทันที
       if (selected.location && selected.location !== "-" && selected.location.trim() !== "") {
         updateLocationInput([selected.location]);
       } else {
@@ -415,7 +415,11 @@
     function addCompare() {
       const type = document.getElementById('ins-type').value;
       const carType = document.getElementById('car-type').value;
-      const location = document.getElementById('car-location').value;
+      
+      // ดึงค่าจากช่อง Location (รองรับทั้งแบบ select และ input text)
+      const locElement = document.getElementById('car-location');
+      const location = locElement ? locElement.value : "";
+      
       const sumInsured = document.getElementById('ins-sum-insured').value;
       const company = document.getElementById('ins-company').value;
       const planIdx = document.getElementById('ins-plan').value;
@@ -437,14 +441,11 @@
         comparisonItems.push(item);
         renderTable();
         
-        // 🟢 รีเซ็ตช่องกรอกและแผนประกันให้พร้อมเลือกรายการถัดไปทันที
+        // เคลียร์ค่าเตรียมพร้อมทำรายการถัดไป
         document.getElementById('ins-plan').innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
         document.getElementById('ins-sum-insured').value = '';
         document.getElementById('ins-premium').value = '';
-        document.getElementById('car-location').value = '';
         availablePlansCache = [];
-        
-        // เรียก fetchPlans ใหม่เพื่อให้ดึงรายการแผนของบริษัท/ประเภทเดิมกลับมาให้เลือกต่อได้ทันที
         fetchPlans();
       });
     }
