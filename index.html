@@ -342,8 +342,11 @@
     function fetchPlans() {
       const type = document.getElementById('ins-type').value;
       const carType = document.getElementById('car-type').value;
-      const location = document.getElementById('car-location').value;
+      // เช็คว่าช่อง location เป็น input หรือ select เพื่อดึงค่ามาใช้ถูกต้อง
+      const locElement = document.getElementById('car-location');
+      const location = locElement ? locElement.value : "";
       const company = document.getElementById('ins-company').value;
+      
       if(!company || !type) return;
 
       fetch(GAS_API_URL, {
@@ -358,26 +361,26 @@
           const planSelect = document.getElementById('ins-plan');
           planSelect.innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
           availablePlansCache.forEach((p, idx) => {
-            planSelect.innerHTML += `<option value="${idx}">${p.plan || 'ทั่วไป'} (ทุน: ${p.sumInsured})</option>`;
+            planSelect.innerHTML += `<option value="${idx}">${p.plan || 'ทั่วไป'} (ทุน: ${p.sumInsured}) ${p.location ? '['+p.location+']' : ''}</option>`;
           });
         }
       });
     }
 
   function onPlanSelected() {
-  const idx = document.getElementById('ins-plan').value;
-  if(idx === "") return;
-  const selected = availablePlansCache[idx];
-  document.getElementById('ins-sum-insured').value = selected.sumInsured;
-  document.getElementById('ins-premium').value = selected.grossPremium > 0 ? selected.grossPremium : '';
-  
-  // อัปเดตช่อง Location ตามข้อมูลในแถวนั้นทันที
-  if (selected.location && selected.location !== "-") {
-    updateLocationInput([selected.location]);
-  } else {
-    updateLocationInput([]); // ถ้าช่องในชีตว่าง ให้เปิดเป็นช่องพิมพ์อิสระ
-  }
-}
+      const idx = document.getElementById('ins-plan').value;
+      if(idx === "") return;
+      const selected = availablePlansCache[idx];
+      document.getElementById('ins-sum-insured').value = selected.sumInsured;
+      document.getElementById('ins-premium').value = selected.grossPremium > 0 ? selected.grossPremium : '';
+      
+      // อัปเดตช่อง Location ตามข้อมูลในแถวนั้นทันที
+      if (selected.location && selected.location !== "-" && selected.location.trim() !== "") {
+        updateLocationInput([selected.location]);
+      } else {
+        updateLocationInput([]); // ถ้าช่องในชีตว่าง ให้เปิดเป็นช่องพิมพ์อิสระ
+      }
+    }
 
     function addCompare() {
       const type = document.getElementById('ins-type').value;
