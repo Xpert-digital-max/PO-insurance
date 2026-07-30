@@ -339,6 +339,7 @@
       });
     }
 
+    // 1. ฟังก์ชันดึงแผนประกัน (ทำงานเมื่อเลือก ประเภท, บริษัท, หรือประเภทรถ)
     function fetchPlans() {
       const type = document.getElementById('ins-type').value;
       const carType = document.getElementById('car-type').value;
@@ -356,39 +357,58 @@
         if(result.status === 'success') {
           availablePlansCache = result.data;
           
-          // 1. รวบรวม Location หรือเงื่อนไขที่ไม่ซ้ำกันจากชีตมาทำตัวเลือก
-          const locationsSet = new Set();
-          availablePlansCache.forEach(p => {
-            if (p.location && p.location !== "-" && p.location.trim() !== "") {
-              locationsSet.add(p.location);
-            }
-          });
-
-          // อัปเดตช่อง Location ให้เป็น Dropdown หรือช่องพิมพ์ตามข้อมูลในชีต
-          updateLocationInput(Array.from(locationsSet));
-
-          // 2. เติมรายการแผนประกัน
+          // เติมรายการแผนประกัน (เก็บบันทึกค่าแผนเดิมไว้ไม่ให้หลุดถ้าเลือกไว้แล้ว)
           const planSelect = document.getElementById('ins-plan');
+          const currentPlanVal = planSelect.value;
+          
           planSelect.innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
           availablePlansCache.forEach((p, idx) => {
-            planSelect.innerHTML += `<option value="${idx}">${p.plan || 'ทั่วไป'} (ทุน: ${p.sumInsured}) ${p.location ? '['+p.location+']' : ''}</option>`;
+            const isSelected = (idx.toString() === currentPlanVal) ? 'selected' : '';
+            planSelect.innerHTML += `<option value="${idx}" ${isSelected}>${p.plan || 'ทั่วไป'} (ทุน: ${p.sumInsured}) ${p.location ? '['+p.location+']' : ''}</option>`;
           });
         }
       });
     }
 
-  function onPlanSelected() {
+    // 2. ฟังก์ชันเมื่อเลือกแผนประกัน (ดึงทุน เบี้ย และล็อก Location ตามแผนนั้นๆ ทันที)
+    function onPlanSelected() {
       const idx = document.getElementById('ins-plan').value;
-      if(idx === "") return;
+      if(idx === "") {
+        document.getElementById('ins-sum-insured').value = '';
+        document.getElementById('ins-premium').value = '';
+        updateLocationInput([]);
+        return;
+      }
+      
       const selected = availablePlansCache[idx];
       document.getElementById('ins-sum-insured').value = selected.sumInsured;
       document.getElementById('ins-premium').value = selected.grossPremium > 0 ? selected.grossPremium : '';
       
-      // อัปเดตช่อง Location ตามข้อมูลในแถวนั้นทันที
+      // ล็อก Location ให้ตรงกับแผนที่เลือกเป๊ะๆ โดยไม่ไปสั่งรีเซ็ตแผนซ้ำ
       if (selected.location && selected.location !== "-" && selected.location.trim() !== "") {
         updateLocationInput([selected.location]);
       } else {
-        updateLocationInput([]); // ถ้าช่องในชีตว่าง ให้เปิดเป็นช่องพิมพ์อิสระ
+        updateLocationInput([]); 
+      }
+    }
+
+    // 3. ฟังก์ชันสร้างช่อง Location (แยกอิสระ ไม่วนลูปกลับไปเรียก fetchPlans)
+    function updateLocationInput(locations) {
+      const container = document.getElementById('location-container');
+      const existingEl = document.getElementById('car-location');
+      const currentValue = existingEl ? existingEl.value : "";
+
+      if (locations && locations.length > 0 && locations[0] !== "") {
+        let html = '<select id="car-location" class="border p-2 rounded w-full bg-white">';
+        html += '<option value="">-- เลือกพื้นที่ / เงื่อนไข --</option>';
+        locations.forEach(loc => {
+          const isSelected = (loc === currentValue || locations.length === 1) ? 'selected' : '';
+          html += `<option value="${loc}" ${isSelected}>${loc}</option>`;
+        });
+        html += '</select>';
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = `<input type="text" id="car-location" value="${currentValue}" placeholder="ระบุพื้นที่ / เงื่อนไข (ถ้ามี)" class="border p-2 rounded w-full bg-white">`;
       }
     }
 
