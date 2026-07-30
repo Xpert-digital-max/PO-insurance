@@ -345,7 +345,6 @@
       const carType = document.getElementById('car-type').value;
       const company = document.getElementById('ins-company').value;
       
-      // ล้างค่าช่อง Location เก่าทิ้งทันทีเมื่อเปลี่ยนบริษัทหรือประเภท
       const container = document.getElementById('location-container');
       container.innerHTML = '<select id="car-location" class="border p-2 rounded w-full bg-white"><option value="">-- เลือกพื้นที่ / เงื่อนไข --</option></select>';
 
@@ -362,8 +361,11 @@
           availablePlansCache = result.data;
           const planSelect = document.getElementById('ins-plan');
           planSelect.innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
+          
+          // ใช้ Set เพื่อกรองชื่อแผนที่ไม่ให้ซ้ำกันจนเกินไป (ถ้าต้องการ)
           availablePlansCache.forEach((p, idx) => {
-            planSelect.innerHTML += `<option value="${idx}">${p.plan || 'ทั่วไป'} (ทุน: ${p.sumInsured}) ${p.location ? '['+p.location+']' : ''}</option>`;
+            // 🟢 แสดงผลเฉพาะ ชื่อแผน และ ทุนประกัน เท่านั้น ตามที่คุณต้องการ
+            planSelect.innerHTML += `<option value="${idx}">${p.plan} (ทุน: ${p.sumInsured ? Number(p.sumInsured).toLocaleString() : '-'})</option>`;
           });
         }
       });
