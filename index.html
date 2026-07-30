@@ -624,19 +624,27 @@
     }
   }
     
-    // ฟังก์ชันจัดการช่อง Location (เอา onchange ออก เพื่อไม่ให้มันวนลูปสั่งโหลดข้อมูลซ้ำจนหลุด)
+    // ฟังก์ชันจัดการช่อง Location แบบล็อกค่าเดิมไว้ ไม่ให้รีเซ็ตตัวเอง
 function updateLocationInput(locations) {
   const container = document.getElementById('location-container');
+  
+  // เช็คว่ามีค่าที่เคยเลือกไว้ก่อนหน้าหรือไม่ เพื่อกันค่าหาย
+  const existingEl = document.getElementById('car-location');
+  const currentValue = existingEl ? existingEl.value : "";
+
   if (locations && locations.length > 0 && locations[0] !== "") {
     let html = '<select id="car-location" class="border p-2 rounded w-full bg-white">';
     html += '<option value="">-- เลือกพื้นที่ / เงื่อนไข --</option>';
     locations.forEach(loc => {
-      html += `<option value="${loc}">${loc}</option>`;
+      // ถ้าค่าตรงกับที่เคยเลือก ให้คงสถานะ selected ไว้
+      const isSelected = (loc === currentValue) ? 'selected' : '';
+      html += `<option value="${loc}" ${isSelected}>${loc}</option>`;
     });
     html += '</select>';
     container.innerHTML = html;
   } else {
-    container.innerHTML = '<input type="text" id="car-location" placeholder="ระบุพื้นที่ / เงื่อนไข (ถ้ามี)" class="border p-2 rounded w-full bg-white">';
+    // ถ้าไม่มีเงื่อนไขพิเศษ ให้แสดงช่องพิมพ์ธรรมดาและคงค่าเดิมไว้ (ถ้ามี)
+    container.innerHTML = `<input type="text" id="car-location" value="${currentValue}" placeholder="ระบุพื้นที่ / เงื่อนไข (ถ้ามี)" class="border p-2 rounded w-full bg-white">`;
   }
 }
   </script>
