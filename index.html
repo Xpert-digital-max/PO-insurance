@@ -342,9 +342,6 @@
     function fetchPlans() {
       const type = document.getElementById('ins-type').value;
       const carType = document.getElementById('car-type').value;
-      // เช็คว่าช่อง location เป็น input หรือ select เพื่อดึงค่ามาใช้ถูกต้อง
-      const locElement = document.getElementById('car-location');
-      const location = locElement ? locElement.value : "";
       const company = document.getElementById('ins-company').value;
       
       if(!company || !type) return;
@@ -352,12 +349,25 @@
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getPlans', company: company, type: type, carType: carType, location: location })
+        body: JSON.stringify({ action: 'getPlans', company: company, type: type, carType: carType })
       })
       .then(res => res.json())
       .then(result => {
         if(result.status === 'success') {
           availablePlansCache = result.data;
+          
+          // 1. รวบรวม Location หรือเงื่อนไขที่ไม่ซ้ำกันจากชีตมาทำตัวเลือก
+          const locationsSet = new Set();
+          availablePlansCache.forEach(p => {
+            if (p.location && p.location !== "-" && p.location.trim() !== "") {
+              locationsSet.add(p.location);
+            }
+          });
+
+          // อัปเดตช่อง Location ให้เป็น Dropdown หรือช่องพิมพ์ตามข้อมูลในชีต
+          updateLocationInput(Array.from(locationsSet));
+
+          // 2. เติมรายการแผนประกัน
           const planSelect = document.getElementById('ins-plan');
           planSelect.innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
           availablePlansCache.forEach((p, idx) => {
