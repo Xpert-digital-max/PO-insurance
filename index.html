@@ -624,12 +624,11 @@
     }
   }
     
-    // ฟังก์ชันจัดการช่อง Location ตามที่ชีตส่งค่ามา
+    // ฟังก์ชันจัดการช่อง Location (เอา onchange ออก เพื่อไม่ให้มันวนลูปสั่งโหลดข้อมูลซ้ำจนหลุด)
 function updateLocationInput(locations) {
   const container = document.getElementById('location-container');
   if (locations && locations.length > 0 && locations[0] !== "") {
-    // ถ้ามีข้อมูลในชีต ให้สร้างเป็น Dropdown ตัวเลือก
-    let html = '<select id="car-location" onchange="fetchPlans()" class="border p-2 rounded w-full bg-white">';
+    let html = '<select id="car-location" class="border p-2 rounded w-full bg-white">';
     html += '<option value="">-- เลือกพื้นที่ / เงื่อนไข --</option>';
     locations.forEach(loc => {
       html += `<option value="${loc}">${loc}</option>`;
@@ -637,7 +636,6 @@ function updateLocationInput(locations) {
     html += '</select>';
     container.innerHTML = html;
   } else {
-    // ถ้าในชีตว่างเปล่า ให้แสดงเป็นช่องกรอกข้อความอิสระ
     container.innerHTML = '<input type="text" id="car-location" placeholder="ระบุพื้นที่ / เงื่อนไข (ถ้ามี)" class="border p-2 rounded w-full bg-white">';
   }
 }
