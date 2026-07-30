@@ -385,7 +385,7 @@
       document.getElementById('ins-sum-insured').value = selected.sumInsured;
       document.getElementById('ins-premium').value = selected.grossPremium > 0 ? selected.grossPremium : '';
       
-      // 🟢 บังคับดึง Location มาแสดงผลที่ช่องเลือกพื้นที่ทันที
+      // ดึง Location จากแผนที่เลือกมาแสดงในช่องเลือกทันที
       if (selected.location && selected.location !== "-" && selected.location.trim() !== "") {
         updateLocationInput([selected.location]);
       } else {
