@@ -385,6 +385,7 @@
       document.getElementById('ins-sum-insured').value = selected.sumInsured;
       document.getElementById('ins-premium').value = selected.grossPremium > 0 ? selected.grossPremium : '';
       
+      // 🟢 บังคับดึง Location มาแสดงผลที่ช่องเลือกพื้นที่ทันที
       if (selected.location && selected.location !== "-" && selected.location.trim() !== "") {
         updateLocationInput([selected.location]);
       } else {
@@ -436,7 +437,6 @@
         let html = '<select id="car-location" class="border p-2 rounded w-full bg-white">';
         html += '<option value="">-- เลือกพื้นที่ / เงื่อนไข --</option>';
         locations.forEach(loc => {
-          // ถ้ามีตัวเลือกเดียว ให้เลือกให้อัตโนมัติทันที
           const isSelected = (locations.length === 1) ? 'selected' : '';
           html += `<option value="${loc}" ${isSelected}>${loc}</option>`;
         });
