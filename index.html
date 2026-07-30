@@ -385,12 +385,47 @@
       document.getElementById('ins-sum-insured').value = selected.sumInsured;
       document.getElementById('ins-premium').value = selected.grossPremium > 0 ? selected.grossPremium : '';
       
-      // 🟢 ดึง Location จากแผนที่เลือกมาใส่ในช่อง Location ให้อัตโนมัติทันที
       if (selected.location && selected.location !== "-" && selected.location.trim() !== "") {
         updateLocationInput([selected.location]);
       } else {
         updateLocationInput([]); 
       }
+    }
+
+    function addCompare() {
+      const type = document.getElementById('ins-type').value;
+      const carType = document.getElementById('car-type').value;
+      
+      const locElement = document.getElementById('car-location');
+      const location = locElement ? locElement.value : "";
+      
+      const sumInsured = document.getElementById('ins-sum-insured').value;
+      const company = document.getElementById('ins-company').value;
+      const planIdx = document.getElementById('ins-plan').value;
+      const plan = planIdx !== "" && availablePlansCache[planIdx] ? availablePlansCache[planIdx].plan : document.getElementById('ins-plan').value;
+      const premium = document.getElementById('ins-premium').value;
+
+      if(!type || !company || !premium) return alert("กรุณาเลือกประเภท บริษัท และระบุเบี้ยประกันให้ครบถ้วน");
+
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'getCommRate', company: company, type: type, plan: plan, carType: carType, location: location, sumInsured: sumInsured, premium: premium, level: currentAgent.level })
+      })
+      .then(res => res.json())
+      .then(result => {
+        const commData = (result.status === 'success') ? result.data.commBreakdown : {};
+        const totalComm = (result.status === 'success') ? result.data.totalComm : 0;
+        const item = { company, type, plan, carType, location, sumInsured, premium, commData, totalComm };
+        comparisonItems.push(item);
+        renderTable();
+        
+        document.getElementById('ins-plan').innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
+        document.getElementById('ins-sum-insured').value = '';
+        document.getElementById('ins-premium').value = '';
+        availablePlansCache = [];
+        fetchPlans();
+      });
     }
 
     // 3. ฟังก์ชันสร้างช่อง Location (บังคับอัปเดตค่าใหม่ทุกครั้งโดยไม่จำค่าเก่า)
