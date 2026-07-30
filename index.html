@@ -419,7 +419,7 @@
       const sumInsured = document.getElementById('ins-sum-insured').value;
       const company = document.getElementById('ins-company').value;
       const planIdx = document.getElementById('ins-plan').value;
-      const plan = planIdx !== "" ? availablePlansCache[planIdx].plan : document.getElementById('ins-plan').value;
+      const plan = planIdx !== "" && availablePlansCache[planIdx] ? availablePlansCache[planIdx].plan : document.getElementById('ins-plan').value;
       const premium = document.getElementById('ins-premium').value;
 
       if(!type || !company || !premium) return alert("กรุณาเลือกประเภท บริษัท และระบุเบี้ยประกันให้ครบถ้วน");
@@ -436,7 +436,16 @@
         const item = { company, type, plan, carType, location, sumInsured, premium, commData, totalComm };
         comparisonItems.push(item);
         renderTable();
+        
+        // 🟢 รีเซ็ตช่องกรอกและแผนประกันให้พร้อมเลือกรายการถัดไปทันที
+        document.getElementById('ins-plan').innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
+        document.getElementById('ins-sum-insured').value = '';
         document.getElementById('ins-premium').value = '';
+        document.getElementById('car-location').value = '';
+        availablePlansCache = [];
+        
+        // เรียก fetchPlans ใหม่เพื่อให้ดึงรายการแผนของบริษัท/ประเภทเดิมกลับมาให้เลือกต่อได้ทันที
+        fetchPlans();
       });
     }
 
