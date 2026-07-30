@@ -95,7 +95,12 @@
           <input type="text" id="car-type-other" placeholder="ระบุประเภทรถ..." class="border p-2 rounded w-full mt-2 hidden">
         </div>
 
-        <input type="text" id="car-location" placeholder="ระบุพื้นที่/เงื่อนไข (เช่น กทม., 2-20 ปี)" oninput="fetchPlans()" class="border p-2 rounded w-full bg-white">
+        <!-- ช่อง Location ที่ปรับให้อัตโนมัติ (ถ้ามีตัวเลือกให้เลือก ถ้าไม่มีให้พิมพ์เอง) -->
+<div id="location-container">
+  <select id="car-location" onchange="fetchPlans()" class="border p-2 rounded w-full">
+    <option value="">-- เลือกพื้นที่ / เงื่อนไข --</option>
+  </select>
+</div>
 
       <!-- แถวที่ 4: ทุนประกัน และ เบี้ยรวมสุทธิ -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
@@ -360,12 +365,19 @@
     }
 
     function onPlanSelected() {
-      const idx = document.getElementById('ins-plan').value;
-      if(idx === "") return;
-      const selected = availablePlansCache[idx];
-      document.getElementById('ins-sum-insured').value = selected.sumInsured;
-      document.getElementById('ins-premium').value = selected.grossPremium > 0 ? selected.grossPremium : '';
-    }
+  const idx = document.getElementById('ins-plan').value;
+  if(idx === "") return;
+  const selected = availablePlansCache[idx];
+  document.getElementById('ins-sum-insured').value = selected.sumInsured;
+  document.getElementById('ins-premium').value = selected.grossPremium > 0 ? selected.grossPremium : '';
+  
+  // อัปเดตช่อง Location ตามข้อมูลในแถวนั้นทันที
+  if (selected.location && selected.location !== "-") {
+    updateLocationInput([selected.location]);
+  } else {
+    updateLocationInput([]); // ถ้าช่องในชีตว่าง ให้เปิดเป็นช่องพิมพ์อิสระ
+  }
+}
 
     function addCompare() {
       const type = document.getElementById('ins-type').value;
@@ -598,6 +610,24 @@
       otherInput.value = '';
     }
   }
+    
+    // ฟังก์ชันจัดการช่อง Location ตามที่ชีตส่งค่ามา
+function updateLocationInput(locations) {
+  const container = document.getElementById('location-container');
+  if (locations && locations.length > 0 && locations[0] !== "") {
+    // ถ้ามีข้อมูลในชีต ให้สร้างเป็น Dropdown ตัวเลือก
+    let html = '<select id="car-location" onchange="fetchPlans()" class="border p-2 rounded w-full bg-white">';
+    html += '<option value="">-- เลือกพื้นที่ / เงื่อนไข --</option>';
+    locations.forEach(loc => {
+      html += `<option value="${loc}">${loc}</option>`;
+    });
+    html += '</select>';
+    container.innerHTML = html;
+  } else {
+    // ถ้าในชีตว่างเปล่า ให้แสดงเป็นช่องกรอกข้อความอิสระ
+    container.innerHTML = '<input type="text" id="car-location" placeholder="ระบุพื้นที่ / เงื่อนไข (ถ้ามี)" class="border p-2 rounded w-full bg-white">';
+  }
+}
   </script>
 </body>
 </html>
