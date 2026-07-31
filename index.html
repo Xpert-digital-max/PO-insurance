@@ -575,38 +575,45 @@
       const carReg = document.getElementById('car-reg').value;
       if(!custName || !carReg) return alert("กรุณากรอกชื่อลูกค้าและทะเบียนรถก่อนบันทึก");
 
-      const targetUserId = prompt("กรุณากรอก LINE User ID ของลูกค้าที่ต้องการส่งใบเสนอราคาไปให้:");
-      if (!targetUserId) return;
-
+      const targetUserId = prompt("กรุณากรอก LINE User ID ของลูกค้าที่ต้องการส่งใบเสนอราคาไปให้ (ถ้ามี สามารถกด Cancel ข้ามได้):") || "";
       const actionType = editingQuoteId ? 'editQuote' : 'saveQuote';
+
+      // 🟢 จัดรูปแบบข้อมูลให้ครบถ้วนถูกต้องตามที่ GAS รอรับ
+      const quotePayload = {
+        quoteId: editingQuoteId || "",
+        agentId: currentAgent.id,
+        customerName: custName,
+        carReg: carReg,
+        items: comparisonItems,
+        targetUserId: targetUserId
+      };
 
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ 
           action: actionType, 
-          quoteData: { 
-            quoteId: editingQuoteId,
-            agentId: currentAgent.id, 
-            customerName: custName, 
-            carReg: carReg, 
-            items: comparisonItems,
-            targetUserId: targetUserId
-          } 
+          quoteData: quotePayload 
         })
       })
       .then(res => res.json())
       .then(result => {
         if(result.status === 'success') {
-          alert("บันทึกและส่ง Flex Message ให้ลูกค้าเรียบร้อยแล้ว!");
+          alert("บันทึกข้อมูลเรียบร้อยแล้ว!");
           editingQuoteId = null;
           comparisonItems = [];
           renderTable();
           document.getElementById('cust-name').value = '';
           document.getElementById('car-reg').value = '';
           document.getElementById('car-model').value = '';
-          loadAgentQuotations();
+          loadAgentQuotations(); // โหลดประวัติขึ้นมาแสดงทันที
+        } else {
+          alert("เกิดข้อผิดพลาดในการบันทึก: " + (result.message || "ไม่ทราบสาเหตุ"));
         }
+      })
+      .catch(err => {
+        console.error("Save Error:", err);
+        alert("ไม่สามารถเชื่อมต่อเพื่อบันทึกข้อมูลได้");
       });
     }
 
