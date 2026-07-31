@@ -276,7 +276,7 @@
           if (currentAgent.status === 'Active') {
             document.getElementById('agent-info-display').innerText = `ตัวแทน: ${currentAgent.name} (ระดับ: ${currentAgent.level})`;
             document.getElementById('app-section').classList.remove('hidden');
-            loadMetadata(); // 🟢 โหลดข้อมูลทั้งหมด (บริษัท, ประเภทประกัน, ประเภทรถ) จาก Google Sheet อัตโนมัติ
+            loadMetadata(); 
             loadAgentQuotations();
           } else {
             document.getElementById('pending-section').classList.remove('hidden');
@@ -302,7 +302,7 @@
       .then(result => {
         if(result.status === 'success') {
           document.getElementById('register-section').classList.add('hidden');
-          document.getElementById('pending-section').classList.add('hidden'); // อัปเดตตามโครงสร้างจริง
+          document.getElementById('pending-section').classList.remove('hidden');
           alert("ส่งคำขอลงทะเบียนสำเร็จ!");
         }
       });
@@ -444,6 +444,7 @@
         comparisonItems.push(item);
         renderTable();
         
+        // 🟢 ปรับปรุงให้หลังกดเพิ่มเปรียบเทียบ สามารถเลือกบริษัท แผน หรือเปลี่ยนประเภทประกันต่อได้ทันทีโดยไม่ล้างค่าทั้งหมดทิ้ง
         document.getElementById('ins-plan').innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
         document.getElementById('ins-sum-insured').value = '';
         document.getElementById('ins-premium').value = '';
