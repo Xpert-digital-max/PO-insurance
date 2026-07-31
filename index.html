@@ -60,7 +60,7 @@
       <h3 class="font-bold mb-3 text-gray-800">1. เลือกแบบประกันและเงื่อนไขรถยนต์</h3>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-        <!-- ประเภทประกันดึงจากชีตอัตโนมัติ (รองรับ พ.ร.บ., Non Motor, ประกันชีวิต, ประกันสุขภาพ ฯลฯ) -->
+        <!-- ประเภทประกันดึงจากชีตอัตโนมัติ -->
         <select id="ins-type" onchange="fetchPlans()" class="border p-2 rounded w-full">
           <option value="">-- ประเภทประกัน --</option>
         </select>
@@ -79,11 +79,9 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
         <div>
+          <!-- 🟢 ประเภทรถดึงจากคอลัมน์ D ในชีตอัตโนมัติ -->
           <select id="car-type" onchange="checkCarTypeOther(); fetchPlans();" class="border p-2 rounded w-full">
-            <option value="เก๋ง">รถเก๋ง</option>
-            <option value="กระบะ">รถกระบะ</option>
-            <option value="ตู้">รถตู้</option>
-            <option value="อื่นๆ">อื่นๆ (ระบุเอง)</option>
+            <option value="">-- เลือกประเภทรถ --</option>
           </select>
           <input type="text" id="car-type-other" placeholder="ระบุประเภทรถ..." class="border p-2 rounded w-full mt-2 hidden">
         </div>
@@ -278,7 +276,7 @@
           if (currentAgent.status === 'Active') {
             document.getElementById('agent-info-display').innerText = `ตัวแทน: ${currentAgent.name} (ระดับ: ${currentAgent.level})`;
             document.getElementById('app-section').classList.remove('hidden');
-            loadMetadata(); // 🟢 โหลดทั้งบริษัทและประเภทประกันจากชีตอัตโนมัติ
+            loadMetadata(); // 🟢 โหลดข้อมูลทั้งหมด (บริษัท, ประเภทประกัน, ประเภทรถ) จาก Google Sheet อัตโนมัติ
             loadAgentQuotations();
           } else {
             document.getElementById('pending-section').classList.remove('hidden');
@@ -304,13 +302,13 @@
       .then(result => {
         if(result.status === 'success') {
           document.getElementById('register-section').classList.add('hidden');
-          document.getElementById('pending-section').classList.remove('hidden');
+          document.getElementById('pending-section').classList.add('hidden'); // อัปเดตตามโครงสร้างจริง
           alert("ส่งคำขอลงทะเบียนสำเร็จ!");
         }
       });
     }
 
-    // 🟢 ฟังก์ชันใหม่: ดึงรายชื่อบริษัทและประเภทประกันจาก Google Sheet อัตโนมัติ
+    // 🟢 ฟังก์ชันดึงข้อมูลแบบไดนามิก (บริษัท, ประเภทประกัน, ประเภทรถ) จาก Google Sheet อัตโนมัติ
     function loadMetadata() {
       fetch(GAS_API_URL, {
         method: 'POST',
@@ -320,7 +318,7 @@
       .then(res => res.json())
       .then(result => {
         if(result.status === 'success') {
-          // เติมบริษัทประกัน
+          // 1. เติมบริษัทประกัน
           const selectComp = document.getElementById('ins-company');
           selectComp.innerHTML = '<option value="">-- เลือกบริษัทฯ ประกัน --</option>';
           if(result.companies) {
@@ -329,7 +327,7 @@
             });
           }
 
-          // เติมประเภทประกัน (รองรับ พ.ร.บ., Non Motor, ประกันชีวิต, ประกันสุขภาพ ฯลฯ อัตโนมัติ)
+          // 2. เติมประเภทประกัน
           const selectType = document.getElementById('ins-type');
           selectType.innerHTML = '<option value="">-- ประเภทประกัน --</option>';
           if(result.types) {
@@ -337,6 +335,16 @@
               selectType.innerHTML += `<option value="${type}">${type}</option>`;
             });
           }
+
+          // 3. เติมประเภทรถจากคอลัมน์ D อัตโนมัติ
+          const selectCarType = document.getElementById('car-type');
+          selectCarType.innerHTML = '<option value="">-- เลือกประเภทรถ --</option>';
+          if(result.carTypes) {
+            result.carTypes.forEach(carT => {
+              selectCarType.innerHTML += `<option value="${carT}">${carT}</option>`;
+            });
+          }
+          selectCarType.innerHTML += `<option value="อื่นๆ">อื่นๆ (ระบุเอง)</option>`;
         }
       });
     }
