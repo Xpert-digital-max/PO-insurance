@@ -214,6 +214,13 @@
     </div>
   </div>
 
+    <div class="flex flex-col md:flex-row gap-2 mt-4">
+        <button onclick="convertA4ToImage()" class="w-full bg-red-600 text-white py-2 rounded font-bold hover:bg-red-700">📥 แปลงตารางเป็นรูปภาพ (เซฟ/แชร์)</button>
+        <!-- 🟢 เพิ่มปุ่มส่ง Flex ในหน้าพรีวิวตรงนี้ -->
+        <button onclick="sendFlexFromPreview()" class="w-full bg-green-600 text-white py-2 rounded font-bold hover:bg-green-700">💬 ส่ง Flex Message ให้ลูกค้า</button>
+        <button onclick="closePreview()" class="w-full bg-gray-300 text-gray-700 py-2 rounded font-bold hover:bg-gray-400">ปิดหน้าต่าง</button>
+      </div>
+    
   <script>
     let currentAgent = null;
     let currentUserLineId = "";
