@@ -624,6 +624,53 @@
         otherInput.value = '';
       }
     }
+
+    // ฟังก์ชันสำหรับกดส่ง Flex Message จากหน้าต่างพรีวิว A4 โดยตรง
+    function sendFlexFromPreview() {
+      const custName = document.getElementById('cust-name').value.trim();
+      const carReg = document.getElementById('car-reg').value.trim();
+      if(!custName || !carReg) return alert("กรุณากรอกชื่อลูกค้าและทะเบียนรถก่อนส่ง");
+      if(comparisonItems.length === 0) return alert("ไม่มีรายการเปรียบเทียบ");
+
+      const targetUserId = prompt("กรุณากรอก LINE User ID ของลูกค้าที่ต้องการส่ง Flex Message:");
+      if (!targetUserId) return; // ถ้ากด Cancel หรือไม่กรอก ให้ยกเลิก
+
+      const actionType = editingQuoteId ? 'editQuote' : 'saveQuote';
+      const quotePayload = {
+        quoteId: editingQuoteId || "",
+        agentId: currentAgent.id,
+        customerName: custName,
+        carReg: carReg,
+        items: comparisonItems,
+        targetUserId: targetUserId
+      };
+
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: actionType, quoteData: quotePayload })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if(result.status === 'success') {
+          alert("บันทึกและส่ง Flex Message ให้ลูกค้าเรียบร้อยแล้ว!");
+          closePreview(); // ปิดหน้าต่างพรีวิวอัตโนมัติหลังส่งสำเร็จ
+          editingQuoteId = null;
+          comparisonItems = [];
+          renderTable();
+          document.getElementById('cust-name').value = '';
+          document.getElementById('car-reg').value = '';
+          document.getElementById('car-model').value = '';
+          loadAgentQuotations();
+        } else {
+          alert("เกิดข้อผิดพลาด: " + (result.message || "ไม่ทราบสาเหตุ"));
+        }
+      })
+      .catch(err => {
+        console.error("Preview Send Error:", err);
+        alert("ไม่สามารถเชื่อมต่อเพื่อส่งข้อความได้");
+      });
+    }
   </script>
 </body>
 </html>
