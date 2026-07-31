@@ -279,7 +279,6 @@
       .then(res => res.json())
       .then(result => {
         document.getElementById('loading-section').classList.add('hidden');
-        
         if (result.status === 'success' && result.data) {
           currentAgent = result.data;
           if (currentAgent.status === 'Active') {
@@ -291,7 +290,6 @@
             document.getElementById('pending-section').classList.remove('hidden');
           }
         } else {
-          // ถ้าไม่พบข้อมูลในระบบเลย -> เด้งเปิดฟอร์มลงทะเบียนอัตโนมัติ
           document.getElementById('reg-uid').value = uid;
           document.getElementById('register-section').classList.remove('hidden');
         }
@@ -306,10 +304,7 @@
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ 
-          action: 'register', 
-          formData: { name: name, phone: phone, uid: currentUserLineId } 
-        })
+        body: JSON.stringify({ action: 'register', formData: { name: name, phone: phone, uid: currentUserLineId } })
       })
       .then(res => res.json())
       .then(result => {
@@ -339,14 +334,16 @@
       });
     }
 
-    // 1. เมื่อเปลี่ยนประเภท, บริษัท หรือประเภทรถ ให้เคลียร์ช่อง Location ทิ้งก่อนดึงข้อมูลใหม่
+    // ฟังก์ชันดึงแผนประกันที่รองรับการเปลี่ยนบริษัทได้อย่างราบรื่น
     function fetchPlans() {
       const type = document.getElementById('ins-type').value;
       const carType = document.getElementById('car-type').value;
       const company = document.getElementById('ins-company').value;
       
-      const container = document.getElementById('location-container');
-      container.innerHTML = '<select id="car-location" class="border p-2 rounded w-full bg-white"><option value="">-- เลือกพื้นที่ / เงื่อนไข --</option></select>';
+      document.getElementById('ins-plan').innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
+      document.getElementById('ins-sum-insured').value = '';
+      document.getElementById('ins-premium').value = '';
+      updateLocationInput([]);
 
       if(!company || !type) return;
 
@@ -358,20 +355,16 @@
       .then(res => res.json())
       .then(result => {
         if(result.status === 'success') {
-          availablePlansCache = result.data;
+          availablePlansCache = result.data || [];
           const planSelect = document.getElementById('ins-plan');
           planSelect.innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
-          
-          // ใช้ Set เพื่อกรองชื่อแผนที่ไม่ให้ซ้ำกันจนเกินไป (ถ้าต้องการ)
           availablePlansCache.forEach((p, idx) => {
-            // 🟢 แสดงผลเฉพาะ ชื่อแผน และ ทุนประกัน เท่านั้น ตามที่คุณต้องการ
             planSelect.innerHTML += `<option value="${idx}">${p.plan} (ทุน: ${p.sumInsured ? Number(p.sumInsured).toLocaleString() : '-'})</option>`;
           });
         }
       });
     }
 
-    // 2. เมื่อเลือกแผนประกัน ให้ดึงเฉพาะ Location ของแผนนั้นๆ มาแสดงแบบสดๆ
     function onPlanSelected() {
       const idx = document.getElementById('ins-plan').value;
       if(idx === "") {
@@ -385,7 +378,6 @@
       document.getElementById('ins-sum-insured').value = selected.sumInsured;
       document.getElementById('ins-premium').value = selected.grossPremium > 0 ? selected.grossPremium : '';
       
-      // ดึง Location จากแผนที่เลือกมาแสดงในช่องเลือกทันที
       if (selected.location && selected.location !== "-" && selected.location.trim() !== "") {
         updateLocationInput([selected.location]);
       } else {
@@ -393,68 +385,30 @@
       }
     }
 
-    function addCompare() {
-      const type = document.getElementById('ins-type').value;
-      const carType = document.getElementById('car-type').value;
-      
-      const locElement = document.getElementById('car-location');
-      const location = locElement ? locElement.value : "";
-      
-      const sumInsured = document.getElementById('ins-sum-insured').value;
-      const company = document.getElementById('ins-company').value;
-      const planIdx = document.getElementById('ins-plan').value;
-      const plan = planIdx !== "" && availablePlansCache[planIdx] ? availablePlansCache[planIdx].plan : document.getElementById('ins-plan').value;
-      const premium = document.getElementById('ins-premium').value;
-
-      if(!type || !company || !premium) return alert("กรุณาเลือกประเภท บริษัท และระบุเบี้ยประกันให้ครบถ้วน");
-
-      fetch(GAS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getCommRate', company: company, type: type, plan: plan, carType: carType, location: location, sumInsured: sumInsured, premium: premium, level: currentAgent.level })
-      })
-      .then(res => res.json())
-      .then(result => {
-        const commData = (result.status === 'success') ? result.data.commBreakdown : {};
-        const totalComm = (result.status === 'success') ? result.data.totalComm : 0;
-        const item = { company, type, plan, carType, location, sumInsured, premium, commData, totalComm };
-        comparisonItems.push(item);
-        renderTable();
-        
-        document.getElementById('ins-plan').innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
-        document.getElementById('ins-sum-insured').value = '';
-        document.getElementById('ins-premium').value = '';
-        availablePlansCache = [];
-        fetchPlans();
-      });
-    }
-
-    // 3. ฟังก์ชันสร้างช่อง Location (บังคับอัปเดตค่าใหม่ทุกครั้งโดยไม่จำค่าเก่า)
     function updateLocationInput(locations) {
       const container = document.getElementById('location-container');
+      const existingEl = document.getElementById('car-location');
+      const currentValue = existingEl ? existingEl.value : "";
 
       if (locations && locations.length > 0 && locations[0] !== "") {
         let html = '<select id="car-location" class="border p-2 rounded w-full bg-white">';
         html += '<option value="">-- เลือกพื้นที่ / เงื่อนไข --</option>';
         locations.forEach(loc => {
-          const isSelected = (locations.length === 1) ? 'selected' : '';
+          const isSelected = (loc === currentValue || locations.length === 1) ? 'selected' : '';
           html += `<option value="${loc}" ${isSelected}>${loc}</option>`;
         });
         html += '</select>';
         container.innerHTML = html;
       } else {
-        container.innerHTML = '<input type="text" id="car-location" placeholder="ระบุพื้นที่ / เงื่อนไข (ถ้ามี)" class="border p-2 rounded w-full bg-white">';
+        container.innerHTML = `<input type="text" id="car-location" value="${currentValue}" placeholder="ระบุพื้นที่ / เงื่อนไข (ถ้ามี)" class="border p-2 rounded w-full bg-white">`;
       }
     }
 
     function addCompare() {
       const type = document.getElementById('ins-type').value;
       const carType = document.getElementById('car-type').value;
-      
-      // ดึงค่าจากช่อง Location (รองรับทั้งแบบ select และ input text)
       const locElement = document.getElementById('car-location');
       const location = locElement ? locElement.value : "";
-      
       const sumInsured = document.getElementById('ins-sum-insured').value;
       const company = document.getElementById('ins-company').value;
       const planIdx = document.getElementById('ins-plan').value;
@@ -476,12 +430,12 @@
         comparisonItems.push(item);
         renderTable();
         
-        // เคลียร์ค่าเตรียมพร้อมทำรายการถัดไป
+        // เคลียร์ค่าเฉพาะส่วนแผนเพื่อเลือกบริษัทถัดไปได้ทันที
         document.getElementById('ins-plan').innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
         document.getElementById('ins-sum-insured').value = '';
         document.getElementById('ins-premium').value = '';
+        updateLocationInput([]);
         availablePlansCache = [];
-        fetchPlans();
       });
     }
 
@@ -534,7 +488,6 @@
       
       document.getElementById('image-preview-container').classList.add('hidden');
       document.getElementById('image-output').innerHTML = '';
-      
       document.getElementById('pdf-preview-modal').classList.remove('hidden');
     }
 
@@ -546,39 +499,30 @@
       const element = document.getElementById('a4-document');
       html2canvas(element, { scale: 2, useCORS: true }).then(canvas => {
         const imgData = canvas.toDataURL("image/png");
-        
-        // 🟢 เปลี่ยนวิธีแสดงผลเพื่อให้มือถือเซฟรูปได้
         const outputDiv = document.getElementById('image-output');
         outputDiv.innerHTML = '';
-        
         const imgElement = document.createElement('img');
         imgElement.src = imgData;
         imgElement.style.maxWidth = '100%';
         imgElement.style.borderRadius = '8px';
         imgElement.style.border = '1px solid #ccc';
-        
         outputDiv.appendChild(imgElement);
-        
-        // แสดงกล่องรูปภาพขึ้นมา
         document.getElementById('image-preview-container').classList.remove('hidden');
-
-        // แจ้งเตือนสั้นๆ ให้ผู้ใช้ทราบวิธีบันทึกบนมือถือ
         alert("แปลงภาพสำเร็จ! กรุณากดค้างที่รูปภาพด้านล่างเพื่อบันทึกภาพลงมือถือครับ");
-        
       }).catch(err => {
         alert("ไม่สามารถแปลงตารางเป็นรูปภาพได้ กรุณาลองใหม่อีกครั้ง");
       });
     }
 
     function saveAndSendLINE() {
-      const custName = document.getElementById('cust-name').value;
-      const carReg = document.getElementById('car-reg').value;
+      const custName = document.getElementById('cust-name').value.trim();
+      const carReg = document.getElementById('car-reg').value.trim();
       if(!custName || !carReg) return alert("กรุณากรอกชื่อลูกค้าและทะเบียนรถก่อนบันทึก");
+      if(comparisonItems.length === 0) return alert("กรุณาเพิ่มรายการเปรียบเทียบอย่างน้อย 1 รายการก่อนบันทึก");
 
-      const targetUserId = prompt("กรุณากรอก LINE User ID ของลูกค้าที่ต้องการส่งใบเสนอราคาไปให้ (ถ้ามี สามารถกด Cancel ข้ามได้):") || "";
+      const targetUserId = prompt("กรุณากรอก LINE User ID ของลูกค้า (หรือกด Cancel เพื่อข้าม):") || "";
       const actionType = editingQuoteId ? 'editQuote' : 'saveQuote';
 
-      // 🟢 จัดรูปแบบข้อมูลให้ครบถ้วนถูกต้องตามที่ GAS รอรับ
       const quotePayload = {
         quoteId: editingQuoteId || "",
         agentId: currentAgent.id,
@@ -591,10 +535,7 @@
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ 
-          action: actionType, 
-          quoteData: quotePayload 
-        })
+        body: JSON.stringify({ action: actionType, quoteData: quotePayload })
       })
       .then(res => res.json())
       .then(result => {
@@ -606,7 +547,7 @@
           document.getElementById('cust-name').value = '';
           document.getElementById('car-reg').value = '';
           document.getElementById('car-model').value = '';
-          loadAgentQuotations(); // โหลดประวัติขึ้นมาแสดงทันที
+          loadAgentQuotations();
         } else {
           alert("เกิดข้อผิดพลาดในการบันทึก: " + (result.message || "ไม่ทราบสาเหตุ"));
         }
@@ -618,6 +559,7 @@
     }
 
     function loadAgentQuotations() {
+      if(!currentAgent || !currentAgent.id) return;
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -627,8 +569,8 @@
       .then(result => {
         if(result.status === 'success') {
           const tbody = document.getElementById('quotation-history-body');
-          window.myQuotesCache = result.quotes;
-          if(result.quotes.length === 0) {
+          window.myQuotesCache = result.quotes || [];
+          if(!result.quotes || result.quotes.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-gray-400">ยังไม่มีประวัติใบเสนอราคา</td></tr>`;
             return;
           }
@@ -659,12 +601,6 @@
       try {
         comparisonItems = JSON.parse(q.details) || [];
       } catch(e) { comparisonItems = []; }
-      
-      if (q.agentId) {
-        if (!currentAgent) currentAgent = {};
-        currentAgent.id = q.agentId;
-      }
-
       renderTable();
       alert(`กำลังโหลดใบเสนอราคา ${q.quoteId} เพื่อแก้ไข`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -682,43 +618,18 @@
         if(result.status === 'success') loadAgentQuotations();
       });
     }
-    
-    // ฟังก์ชันเช็คว่าถ้าเลือกประเภทรถเป็น "อื่นๆ" ให้แสดงช่องกรอกข้อความ
-  function checkCarTypeOther() {
-    const carTypeSelect = document.getElementById('car-type');
-    const otherInput = document.getElementById('car-type-other');
-    if (carTypeSelect.value === 'อื่นๆ') {
-      otherInput.classList.remove('hidden');
-      otherInput.focus();
-    } else {
-      otherInput.classList.add('hidden');
-      otherInput.value = '';
-    }
-  }
-    
-    // ฟังก์ชันจัดการช่อง Location แบบล็อกค่าเดิมไว้ ไม่ให้รีเซ็ตตัวเอง
-function updateLocationInput(locations) {
-  const container = document.getElementById('location-container');
-  
-  // เช็คว่ามีค่าที่เคยเลือกไว้ก่อนหน้าหรือไม่ เพื่อกันค่าหาย
-  const existingEl = document.getElementById('car-location');
-  const currentValue = existingEl ? existingEl.value : "";
 
-  if (locations && locations.length > 0 && locations[0] !== "") {
-    let html = '<select id="car-location" class="border p-2 rounded w-full bg-white">';
-    html += '<option value="">-- เลือกพื้นที่ / เงื่อนไข --</option>';
-    locations.forEach(loc => {
-      // ถ้าค่าตรงกับที่เคยเลือก ให้คงสถานะ selected ไว้
-      const isSelected = (loc === currentValue) ? 'selected' : '';
-      html += `<option value="${loc}" ${isSelected}>${loc}</option>`;
-    });
-    html += '</select>';
-    container.innerHTML = html;
-  } else {
-    // ถ้าไม่มีเงื่อนไขพิเศษ ให้แสดงช่องพิมพ์ธรรมดาและคงค่าเดิมไว้ (ถ้ามี)
-    container.innerHTML = `<input type="text" id="car-location" value="${currentValue}" placeholder="ระบุพื้นที่ / เงื่อนไข (ถ้ามี)" class="border p-2 rounded w-full bg-white">`;
-  }
-}
+    function checkCarTypeOther() {
+      const carTypeSelect = document.getElementById('car-type');
+      const otherInput = document.getElementById('car-type-other');
+      if (carTypeSelect.value === 'อื่นๆ') {
+        otherInput.classList.remove('hidden');
+        otherInput.focus();
+      } else {
+        otherInput.classList.add('hidden');
+        otherInput.value = '';
+      }
+    }
   </script>
 </body>
 </html>
