@@ -318,7 +318,7 @@
       .then(res => res.json())
       .then(result => {
         if(result.status === 'success') {
-          // 1. เติมบริษัทประกัน
+          // 1. บริษัทประกัน
           const selectComp = document.getElementById('ins-company');
           selectComp.innerHTML = '<option value="">-- เลือกบริษัทฯ ประกัน --</option>';
           if(result.companies) {
@@ -327,7 +327,7 @@
             });
           }
 
-          // 2. เติมประเภทประกัน
+          // 2. ประเภทประกัน
           const selectType = document.getElementById('ins-type');
           selectType.innerHTML = '<option value="">-- ประเภทประกัน --</option>';
           if(result.types) {
@@ -336,7 +336,7 @@
             });
           }
 
-          // 3. เติมประเภทรถจากคอลัมน์ D อัตโนมัติ
+          // 3. 🟢 ประเภทรถ (ดึงจากคอลัมน์ D อัตโนมัติ)
           const selectCarType = document.getElementById('car-type');
           selectCarType.innerHTML = '<option value="">-- เลือกประเภทรถ --</option>';
           if(result.carTypes) {
