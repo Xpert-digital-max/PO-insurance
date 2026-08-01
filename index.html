@@ -61,19 +61,19 @@
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
         <!-- ประเภทประกัน -->
-        <select id="ins-type" onchange="fetchPlans()" class="border p-2 rounded w-full">
+        <select id="ins-type" onchange="fetchPlans()" class="border p-2 rounded w-full bg-white text-black">
           <option value="">-- ประเภทประกัน --</option>
         </select>
 
         <!-- บริษัทประกัน -->
-        <select id="ins-company" onchange="fetchPlans()" class="border p-2 rounded w-full">
+        <select id="ins-company" onchange="fetchPlans()" class="border p-2 rounded w-full bg-white text-black">
           <option value="">-- เลือกบริษัทฯ ประกัน --</option>
         </select>
       </div>
 
       <div class="mb-3">
         <!-- เลือกแผนประกัน -->
-        <select id="ins-plan" onchange="onPlanSelected()" class="border p-2 rounded w-full">
+        <select id="ins-plan" onchange="onPlanSelected()" class="border p-2 rounded w-full bg-white text-black">
           <option value="">-- เลือกแผนประกัน --</option>
         </select>
       </div>
@@ -81,13 +81,13 @@
       <!-- ลำดับ: แผนประกัน -> ทุนประกัน -> ประเภทรถ -> พื้นที่ -> เบี้ยประกัน -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
         <div id="sum-insured-container">
-          <select id="ins-sum-insured" class="border p-2 rounded w-full bg-white">
+          <select id="ins-sum-insured" class="border p-2 rounded w-full bg-white text-black">
             <option value="">-- เลือกทุนประกัน --</option>
           </select>
         </div>
 
         <div>
-          <select id="car-type" onchange="checkCarTypeOther(); calculateFinalPremium();" class="border p-2 rounded w-full">
+          <select id="car-type" onchange="checkCarTypeOther(); calculateFinalPremium();" class="border p-2 rounded w-full bg-white text-black">
             <option value="">-- เลือกประเภทรถ --</option>
           </select>
           <input type="text" id="car-type-other" placeholder="ระบุประเภทรถ..." class="border p-2 rounded w-full mt-2 hidden">
@@ -96,7 +96,7 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
         <div id="location-container">
-          <select id="car-location" onchange="calculateFinalPremium()" class="border p-2 rounded w-full">
+          <select id="car-location" onchange="calculateFinalPremium()" class="border p-2 rounded w-full bg-white text-black">
             <option value="">-- เลือกพื้นที่ / เงื่อนไข --</option>
           </select>
         </div>
@@ -355,7 +355,7 @@
       const company = document.getElementById('ins-company').value;
       
       document.getElementById('ins-plan').innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
-      document.getElementById('sum-insured-container').innerHTML = `<select id="ins-sum-insured" class="border p-2 rounded w-full bg-white"><option value="">-- เลือกทุนประกัน --</option></select>`;
+      document.getElementById('sum-insured-container').innerHTML = `<select id="ins-sum-insured" class="border p-2 rounded w-full bg-white text-black"><option value="">-- เลือกทุนประกัน --</option></select>`;
       document.getElementById('ins-premium').value = '';
       updateLocationInput([]);
 
@@ -391,7 +391,7 @@
       document.getElementById('ins-premium').value = ''; 
 
       if(!selectedPlanName) {
-        container.innerHTML = `<select id="ins-sum-insured" class="border p-2 rounded w-full bg-white"><option value="">-- เลือกทุนประกัน --</option></select>`;
+        container.innerHTML = `<select id="ins-sum-insured" class="border p-2 rounded w-full bg-white text-black"><option value="">-- เลือกทุนประกัน --</option></select>`;
         updateLocationInput([]);
         return;
       }
@@ -413,10 +413,9 @@
 
       if (sumList.length > 0) {
         if (sumList.length === 1) {
-          container.innerHTML = `<input type="text" id="ins-sum-insured" value="${sumList[0]}" readonly class="border p-2 rounded w-full bg-gray-100">`;
+          container.innerHTML = `<input type="text" id="ins-sum-insured" value="${sumList[0]}" readonly class="border p-2 rounded w-full bg-gray-100 text-black">`;
         } else {
-          // 🟢 ผูก onchange="calculateFinalPremium()" เพื่อดึงเบี้ยใหม่ทันทีเมื่อเปลี่ยนทุน
-          let html = '<select id="ins-sum-insured" onchange="calculateFinalPremium()" class="border p-2 rounded w-full bg-white">';
+          let html = '<select id="ins-sum-insured" onchange="calculateFinalPremium()" class="border p-2 rounded w-full bg-white text-black">';
           html += '<option value="">-- เลือกทุนประกัน --</option>';
           sumList.forEach(sum => {
             html += `<option value="${sum}">${Number(sum).toLocaleString()} บาท</option>`;
@@ -425,7 +424,7 @@
           container.innerHTML = html;
         }
       } else {
-        container.innerHTML = `<input type="text" id="ins-sum-insured" placeholder="กรอกทุนประกัน..." oninput="calculateFinalPremium()" class="border p-2 rounded w-full bg-white">`;
+        container.innerHTML = `<input type="text" id="ins-sum-insured" placeholder="กรอกทุนประกัน..." oninput="calculateFinalPremium()" class="border p-2 rounded w-full bg-white text-black">`;
       }
 
       let locList = [];
@@ -444,7 +443,6 @@
       calculateFinalPremium();
     }
 
-    // 🟢 ฟังก์ชันคำนวณเบี้ยประกันสดๆ จาก Google Sheet ทันทีที่มีการเปลี่ยนทุน, ประเภทรถ หรือพื้นที่
     function calculateFinalPremium() {
       const type = document.getElementById('ins-type').value;
       const company = document.getElementById('ins-company').value;
@@ -455,13 +453,11 @@
       const sumInsuredEl = document.getElementById('ins-sum-insured');
       const sumInsured = sumInsuredEl ? sumInsuredEl.value : "";
 
-      // ถ้ายังเลือกไม่ครบ ให้ช่องเบี้ยว่างไว้ก่อน
       if (!type || !company || !selectedPlanName || !sumInsured || !carType) {
         document.getElementById('ins-premium').value = '';
         return;
       }
 
-      // ยิง Request ไปดึงข้อมูลเบี้ยที่ถูกต้องจาก GAS ทันที
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -496,7 +492,7 @@
       const currentValue = existingEl ? existingEl.value : "";
 
       if (locations && locations.length > 0 && locations[0] !== "") {
-        let html = '<select id="car-location" onchange="calculateFinalPremium()" class="border p-2 rounded w-full bg-white">';
+        let html = '<select id="car-location" onchange="calculateFinalPremium()" class="border p-2 rounded w-full bg-white text-black">';
         html += '<option value="">-- เลือกพื้นที่ / เงื่อนไข --</option>';
         locations.forEach(loc => {
           const isSelected = (loc === currentValue || locations.length === 1) ? 'selected' : '';
@@ -505,7 +501,7 @@
         html += '</select>';
         container.innerHTML = html;
       } else {
-        container.innerHTML = `<input type="text" id="car-location" value="${currentValue}" placeholder="ระบุพื้นที่ / เงื่อนไข (ถ้ามี)" oninput="calculateFinalPremium()" class="border p-2 rounded w-full bg-white">`;
+        container.innerHTML = `<input type="text" id="car-location" value="${currentValue}" placeholder="ระบุพื้นที่ / เงื่อนไข (ถ้ามี)" oninput="calculateFinalPremium()" class="border p-2 rounded w-full bg-white text-black">`;
       }
     }
 
@@ -536,7 +532,7 @@
         renderTable();
         
         document.getElementById('ins-plan').innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
-        document.getElementById('sum-insured-container').innerHTML = `<select id="ins-sum-insured" class="border p-2 rounded w-full bg-white"><option value="">-- เลือกทุนประกัน --</option></select>`;
+        document.getElementById('sum-insured-container').innerHTML = `<select id="ins-sum-insured" class="border p-2 rounded w-full bg-white text-black"><option value="">-- เลือกทุนประกัน --</option></select>`;
         document.getElementById('ins-premium').value = '';
         updateLocationInput([]);
         availablePlansCache = [];
