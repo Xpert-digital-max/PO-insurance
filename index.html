@@ -382,15 +382,31 @@
 
     function onPlanSelected() {
       const idx = document.getElementById('ins-plan').value;
+      const sumInsuredInput = document.getElementById('ins-sum-insured');
+      
       if(idx === "") {
-        document.getElementById('ins-sum-insured').value = '';
+        sumInsuredInput.value = '';
+        sumInsuredInput.readOnly = false; // ปลดล็อกให้พิมพ์เองได้
+        sumInsuredInput.classList.remove('bg-gray-100');
         document.getElementById('ins-premium').value = '';
         updateLocationInput([]);
         return;
       }
       
       const selected = availablePlansCache[idx];
-      document.getElementById('ins-sum-insured').value = selected.sumInsured;
+      
+      // 🟢 จัดการช่องทุนประกัน: ถ้าในชีตมีค่า ให้แสดงและล็อกไว้ ถ้าไม่มีค่าให้ปลดล็อกเพื่อให้พิมพ์กรอกเองได้
+      if (selected.sumInsured && selected.sumInsured !== "" && selected.sumInsured !== "-") {
+        sumInsuredInput.value = selected.sumInsured;
+        sumInsuredInput.readOnly = true; // ล็อกไม่ให้แก้ถ้ามีข้อมูลในชีต
+        sumInsuredInput.classList.add('bg-gray-100');
+      } else {
+        sumInsuredInput.value = '';
+        sumInsuredInput.readOnly = false; // เปิดให้พิมพ์เองได้กรณีไม่มีทุนในชีต
+        sumInsuredInput.classList.remove('bg-gray-100');
+        sumInsuredInput.placeholder = "กรุณากรอกทุนประกัน...";
+      }
+
       document.getElementById('ins-premium').value = selected.grossPremium > 0 ? selected.grossPremium : '';
       
       if (selected.location && selected.location !== "-" && selected.location.trim() !== "") {
