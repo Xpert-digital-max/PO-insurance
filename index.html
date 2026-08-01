@@ -398,9 +398,16 @@
       
       const matchedPlans = availablePlansCache.filter(p => p.plan === selectedPlanName);
       
+      // ดึงรายการทุนประกันทั้งหมดของแผนนี้ (รวมทุกแถวในชีตที่มีชื่อแผนนี้)
       let sumList = [];
       matchedPlans.forEach(p => {
-        if (p.sumInsured && p.sumInsured !== "" && p.sumInsured !== "-" && !sumList.includes(String(p.sumInsured))) {
+        if (p.sumInsuredList && p.sumInsuredList.length > 0) {
+          p.sumInsuredList.forEach(s => {
+            if (s && s !== "" && s !== "-" && !sumList.includes(String(s))) {
+              sumList.push(String(s));
+            }
+          });
+        } else if (p.sumInsured && p.sumInsured !== "" && p.sumInsured !== "-" && !sumList.includes(String(p.sumInsured))) {
           sumList.push(String(p.sumInsured));
         }
       });
@@ -418,13 +425,19 @@
           container.innerHTML = html;
         }
       } else {
-        // ถ้าในชีตไม่มีทุนประกันระบุไว้เลย ให้เปลี่ยนเป็นช่องว่างให้พิมพ์กรอกเองได้
+        // หากในชีตไม่มีข้อมูลทุนประกันเลยจริงๆ ถึงจะปล่อยให้ช่องนี้กลายเป็นช่องว่างพิมพ์กรอกเองได้
         container.innerHTML = `<input type="text" id="ins-sum-insured" placeholder="กรอกทุนประกัน..." oninput="calculateFinalPremium()" class="border p-2 rounded w-full bg-white">`;
       }
 
       let locList = [];
       matchedPlans.forEach(p => {
-        if (p.location && p.location !== "-" && p.location.trim() !== "" && !locList.includes(p.location)) {
+        if (p.locations && p.locations.length > 0) {
+          p.locations.forEach(l => {
+            if (l && l !== "-" && l.trim() !== "" && !locList.includes(l)) {
+              locList.push(l);
+            }
+          });
+        } else if (p.location && p.location !== "-" && p.location.trim() !== "" && !locList.includes(p.location)) {
           locList.push(p.location);
         }
       });
@@ -442,7 +455,7 @@
       const sumInsuredEl = document.getElementById('ins-sum-insured');
       const sumInsured = sumInsuredEl ? sumInsuredEl.value : "";
 
-      // เบี้ยประกันจะยังไม่แสดง จนกว่าจะเลือกแผน ทุน และประเภทรถครบถ้วน
+      // เบี้ยประกันจะซ่อนไว้จนกว่าจะเลือกเงื่อนไขครบถ้วน (แผน, ทุน, ประเภทรถ)
       if (!carType || !sumInsured) {
         document.getElementById('ins-premium').value = '';
         return;
@@ -450,8 +463,8 @@
 
       const matched = availablePlansCache.find(p => {
         if (p.plan !== selectedPlanName) return false;
-        if (sumInsured && p.sumInsured && String(p.sumInsured) !== String(sumInsured)) return false;
-        if (carType && p.carType && !p.carType.includes(carType) && !carType.includes(p.carType) && !p.carType.includes('ทุกประเภท')) return false;
+        if (sumInsured && p.sumInsuredList && p.sumInsuredList.length > 0 && !p.sumInsuredList.includes(String(sumInsured))) return false;
+        if (sumInsured && p.sumInsured && String(p.sumInsured) !== String(sumInsured) && (!p.sumInsuredList || p.sumInsuredList.length === 0)) return false;
         return true;
       });
 
