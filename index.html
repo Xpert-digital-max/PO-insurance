@@ -415,7 +415,7 @@
         if (sumList.length === 1) {
           container.innerHTML = `<input type="text" id="ins-sum-insured" value="${sumList[0]}" readonly class="border p-2 rounded w-full bg-gray-100">`;
         } else {
-          // 🟢 ผูก onchange="calculateFinalPremium()" เพื่อให้พอเปลี่ยนทุนปุ๊บ เบี้ยเปลี่ยนตามปั๊บ
+          // 🟢 ผูก onchange="calculateFinalPremium()" เพื่อดึงเบี้ยใหม่ทันทีเมื่อเปลี่ยนทุน
           let html = '<select id="ins-sum-insured" onchange="calculateFinalPremium()" class="border p-2 rounded w-full bg-white">';
           html += '<option value="">-- เลือกทุนประกัน --</option>';
           sumList.forEach(sum => {
@@ -444,64 +444,50 @@
       calculateFinalPremium();
     }
 
-    // 🟢 ฟังก์ชันคำนวณเบี้ยใหม่แบบแม่นยำ รองรับทุกการเปลี่ยนแปลงของ ทุน, ประเภทรถ และพื้นที่
+    // 🟢 ฟังก์ชันคำนวณเบี้ยประกันสดๆ จาก Google Sheet ทันทีที่มีการเปลี่ยนทุน, ประเภทรถ หรือพื้นที่
     function calculateFinalPremium() {
+      const type = document.getElementById('ins-type').value;
+      const company = document.getElementById('ins-company').value;
       const selectedPlanName = document.getElementById('ins-plan').value;
-      if(!selectedPlanName) return;
-
       const carType = document.getElementById('car-type').value;
       const locElement = document.getElementById('car-location');
       const location = locElement ? locElement.value : "";
       const sumInsuredEl = document.getElementById('ins-sum-insured');
       const sumInsured = sumInsuredEl ? sumInsuredEl.value : "";
 
-      // ถ้ายังเลือกทุนหรือประเภทรถไม่ครบ ให้เบี้ยว่างไว้
-      if (!sumInsured || !carType) {
+      // ถ้ายังเลือกไม่ครบ ให้ช่องเบี้ยว่างไว้ก่อน
+      if (!type || !company || !selectedPlanName || !sumInsured || !carType) {
         document.getElementById('ins-premium').value = '';
         return;
       }
 
-      // ค้นหารายการที่ตรงกันใน Cache โดยเช็คทั้ง แผน, ทุนประกัน และประเภทรถ
-      const matched = availablePlansCache.find(p => {
-        if (p.plan !== selectedPlanName) return false;
-        
-        // เช็คทุนประกัน
-        let matchSum = false;
-        if (sumInsured) {
-          if (p.sumInsuredList && p.sumInsuredList.includes(String(sumInsured))) matchSum = true;
-          if (p.sumInsured && String(p.sumInsured) === String(sumInsured)) matchSum = true;
-          if (!matchSum && (!p.sumInsuredList || p.sumInsuredList.length === 0) && !p.sumInsured) matchSum = true; // กรณีไม่มีทุนระบุ
+      // ยิง Request ไปดึงข้อมูลเบี้ยที่ถูกต้องจาก GAS ทันที
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ 
+          action: 'getCommRate', 
+          company: company, 
+          type: type, 
+          plan: selectedPlanName, 
+          carType: carType, 
+          location: location, 
+          sumInsured: sumInsured, 
+          premium: 0, 
+          level: currentAgent ? currentAgent.level : 'AG' 
+        })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.status === 'success' && result.data && result.data.grossPremium > 0) {
+          document.getElementById('ins-premium').value = result.data.grossPremium;
         } else {
-          matchSum = true;
+          document.getElementById('ins-premium').value = '';
         }
-        if (!matchSum) return false;
-
-        // เช็คประเภทรถ (CarType)
-        if (carType && p.carType) {
-          let cleanRowCar = String(p.carType).replace(/รถ/g, '').replace(/\s+/g, '').toLowerCase();
-          let cleanInputCar = String(carType).replace(/รถ/g, '').replace(/\s+/g, '').toLowerCase();
-          if (!cleanRowCar.includes(cleanInputCar) && !cleanInputCar.includes(cleanRowCar) && !p.carType.includes('ทุกประเภท')) {
-            return false;
-          }
-        }
-
-        // เช็คพื้นที่ (Location) ถ้ามีระบุ
-        if (location && p.location && p.location !== "-" && p.location !== "") {
-          let cleanRowLoc = String(p.location).trim().toLowerCase();
-          let cleanInputLoc = String(location).trim().toLowerCase();
-          if (!cleanRowLoc.includes(cleanInputLoc) && !cleanInputLoc.includes('ทุก')) {
-            return false;
-          }
-        }
-
-        return true;
+      })
+      .catch(err => {
+        console.error("Calculate Premium Error:", err);
       });
-
-      if (matched) {
-        document.getElementById('ins-premium').value = matched.grossPremium > 0 ? matched.grossPremium : '';
-      } else {
-        document.getElementById('ins-premium').value = '';
-      }
     }
 
     function updateLocationInput(locations) {
