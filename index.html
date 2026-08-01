@@ -373,7 +373,8 @@
           const planSelect = document.getElementById('ins-plan');
           planSelect.innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
           availablePlansCache.forEach((p, idx) => {
-            planSelect.innerHTML += `<option value="${idx}">${p.plan} (ทุน: ${p.sumInsured ? Number(p.sumInsured).toLocaleString() : '-'})</option>`;
+            // 🟢 แสดงผลเฉพาะชื่อแผน (p.plan) เพียวๆ ไม่พ่วงทุนประกัน
+            planSelect.innerHTML += `<option value="${idx}">${p.plan}</option>`;
           });
         }
       });
