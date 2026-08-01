@@ -78,10 +78,12 @@
         </select>
       </div>
 
-      <!-- ลำดับที่ถูกต้อง: แผนประกัน -> ทุนประกัน -> ประเภทรถ -> พื้นที่ -> เบี้ยประกัน -->
+      <!-- ลำดับ: แผนประกัน -> ทุนประกัน -> ประเภทรถ -> พื้นที่ -> เบี้ยประกัน -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
         <div id="sum-insured-container">
-          <input type="text" id="ins-sum-insured" placeholder="ทุนประกัน (พิมพ์กรอกเองได้)" class="border p-2 rounded w-full bg-white">
+          <select id="ins-sum-insured" class="border p-2 rounded w-full bg-white">
+            <option value="">-- เลือกทุนประกัน --</option>
+          </select>
         </div>
 
         <div>
@@ -353,7 +355,7 @@
       const company = document.getElementById('ins-company').value;
       
       document.getElementById('ins-plan').innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
-      document.getElementById('sum-insured-container').innerHTML = `<input type="text" id="ins-sum-insured" placeholder="ทุนประกัน (พิมพ์กรอกเองได้)" class="border p-2 rounded w-full bg-white">`;
+      document.getElementById('sum-insured-container').innerHTML = `<select id="ins-sum-insured" class="border p-2 rounded w-full bg-white"><option value="">-- เลือกทุนประกัน --</option></select>`;
       document.getElementById('ins-premium').value = '';
       updateLocationInput([]);
 
@@ -386,10 +388,10 @@
       const selectedPlanName = document.getElementById('ins-plan').value;
       const container = document.getElementById('sum-insured-container');
       
-      document.getElementById('ins-premium').value = ''; // ยังไม่แสดงเบี้ยจนกว่าจะเลือกเงื่อนไขครบ
+      document.getElementById('ins-premium').value = ''; 
 
       if(!selectedPlanName) {
-        container.innerHTML = `<input type="text" id="ins-sum-insured" placeholder="ทุนประกัน (พิมพ์กรอกเองได้)" class="border p-2 rounded w-full bg-white">`;
+        container.innerHTML = `<select id="ins-sum-insured" class="border p-2 rounded w-full bg-white"><option value="">-- เลือกทุนประกัน --</option></select>`;
         updateLocationInput([]);
         return;
       }
@@ -416,6 +418,7 @@
           container.innerHTML = html;
         }
       } else {
+        // ถ้าในชีตไม่มีทุนประกันระบุไว้เลย ให้เปลี่ยนเป็นช่องว่างให้พิมพ์กรอกเองได้
         container.innerHTML = `<input type="text" id="ins-sum-insured" placeholder="กรอกทุนประกัน..." oninput="calculateFinalPremium()" class="border p-2 rounded w-full bg-white">`;
       }
 
@@ -426,6 +429,7 @@
         }
       });
       updateLocationInput(locList);
+      calculateFinalPremium();
     }
 
     function calculateFinalPremium() {
@@ -438,8 +442,8 @@
       const sumInsuredEl = document.getElementById('ins-sum-insured');
       const sumInsured = sumInsuredEl ? sumInsuredEl.value : "";
 
-      // เช็คว่าผู้ใช้เลือกประเภทรถหรือยัง ถ้ายังไม่เลือก (หรือยังไม่ครบถ้วน) ให้เบี้ยประกันว่างไว้ก่อน
-      if (!carType) {
+      // เบี้ยประกันจะยังไม่แสดง จนกว่าจะเลือกแผน ทุน และประเภทรถครบถ้วน
+      if (!carType || !sumInsured) {
         document.getElementById('ins-premium').value = '';
         return;
       }
@@ -488,7 +492,7 @@
       const planName = document.getElementById('ins-plan').value;
       const premium = document.getElementById('ins-premium').value;
 
-      if(!type || !company || !premium) return alert("กรุณาเลือกประเภท บริษัท แผน ประเภทรถ และระบุเบี้ยประกันให้ครบถ้วน");
+      if(!type || !company || !planName || !sumInsured || !premium) return alert("กรุณากรอกข้อมูลการเปรียบเทียบให้ครบถ้วน");
 
       fetch(GAS_API_URL, {
         method: 'POST',
@@ -504,7 +508,7 @@
         renderTable();
         
         document.getElementById('ins-plan').innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
-        document.getElementById('sum-insured-container').innerHTML = `<input type="text" id="ins-sum-insured" placeholder="ทุนประกัน (พิมพ์กรอกเองได้)" class="border p-2 rounded w-full bg-white">`;
+        document.getElementById('sum-insured-container').innerHTML = `<select id="ins-sum-insured" class="border p-2 rounded w-full bg-white"><option value="">-- เลือกทุนประกัน --</option></select>`;
         document.getElementById('ins-premium').value = '';
         updateLocationInput([]);
         availablePlansCache = [];
