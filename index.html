@@ -78,7 +78,7 @@
         </select>
       </div>
 
-      <!-- 🟢 ย้ายช่องทุนประกันขึ้นมาก่อนการเลือกประเภทรถ -->
+      <!-- ลำดับที่ถูกต้อง: แผนประกัน -> ทุนประกัน -> ประเภทรถ -> พื้นที่ -> เบี้ยประกัน -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
         <div id="sum-insured-container">
           <input type="text" id="ins-sum-insured" placeholder="ทุนประกัน (พิมพ์กรอกเองได้)" class="border p-2 rounded w-full bg-white">
@@ -359,7 +359,6 @@
 
       if(!company || !type) return;
 
-      // ดึงข้อมูลแผนทั้งหมดโดยส่งค่า carType เป็นค่าว่างเพื่อดึงตัวเลือกทั้งหมดก่อน
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -372,7 +371,6 @@
           const planSelect = document.getElementById('ins-plan');
           planSelect.innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
           
-          // กรองชื่อแผนไม่ให้ซ้ำกันใน Dropdown
           let uniquePlans = [];
           availablePlansCache.forEach((p) => {
             if (!uniquePlans.includes(p.plan)) {
@@ -388,17 +386,16 @@
       const selectedPlanName = document.getElementById('ins-plan').value;
       const container = document.getElementById('sum-insured-container');
       
+      document.getElementById('ins-premium').value = ''; // ยังไม่แสดงเบี้ยจนกว่าจะเลือกเงื่อนไขครบ
+
       if(!selectedPlanName) {
         container.innerHTML = `<input type="text" id="ins-sum-insured" placeholder="ทุนประกัน (พิมพ์กรอกเองได้)" class="border p-2 rounded w-full bg-white">`;
-        document.getElementById('ins-premium').value = '';
         updateLocationInput([]);
         return;
       }
       
-      // ค้นหาทุกรายการที่ตรงกับชื่อแผนที่เลือกใน Cache
       const matchedPlans = availablePlansCache.filter(p => p.plan === selectedPlanName);
       
-      // ดึงรายการทุนประกันที่ไม่ซ้ำกันของแผนนี้
       let sumList = [];
       matchedPlans.forEach(p => {
         if (p.sumInsured && p.sumInsured !== "" && p.sumInsured !== "-" && !sumList.includes(String(p.sumInsured))) {
@@ -422,7 +419,6 @@
         container.innerHTML = `<input type="text" id="ins-sum-insured" placeholder="กรอกทุนประกัน..." oninput="calculateFinalPremium()" class="border p-2 rounded w-full bg-white">`;
       }
 
-      // ดึง Location ทั้งหมดของแผนนี้มาแสดง
       let locList = [];
       matchedPlans.forEach(p => {
         if (p.location && p.location !== "-" && p.location.trim() !== "" && !locList.includes(p.location)) {
@@ -430,12 +426,8 @@
         }
       });
       updateLocationInput(locList);
-
-      // คำนวณเบี้ยประกันขั้นต้นถ้ามีข้อมูลครบ
-      calculateFinalPremium();
     }
 
-    // 🟢 ฟังก์ชันคำนวณและดึงเบี้ยประกันอัตโนมัติทันทีเมื่อเลือก ประเภทรถ, ทุน หรือ Location
     function calculateFinalPremium() {
       const selectedPlanName = document.getElementById('ins-plan').value;
       if(!selectedPlanName) return;
@@ -446,15 +438,23 @@
       const sumInsuredEl = document.getElementById('ins-sum-insured');
       const sumInsured = sumInsuredEl ? sumInsuredEl.value : "";
 
-      // ค้นหาใน Cache ว่ามีเรกคอร์ดไหนตรงกับเงื่อนไขทั้งหมดที่สุด
+      // เช็คว่าผู้ใช้เลือกประเภทรถหรือยัง ถ้ายังไม่เลือก (หรือยังไม่ครบถ้วน) ให้เบี้ยประกันว่างไว้ก่อน
+      if (!carType) {
+        document.getElementById('ins-premium').value = '';
+        return;
+      }
+
       const matched = availablePlansCache.find(p => {
         if (p.plan !== selectedPlanName) return false;
         if (sumInsured && p.sumInsured && String(p.sumInsured) !== String(sumInsured)) return false;
+        if (carType && p.carType && !p.carType.includes(carType) && !carType.includes(p.carType) && !p.carType.includes('ทุกประเภท')) return false;
         return true;
       });
 
       if (matched) {
         document.getElementById('ins-premium').value = matched.grossPremium > 0 ? matched.grossPremium : '';
+      } else {
+        document.getElementById('ins-premium').value = '';
       }
     }
 
@@ -488,7 +488,7 @@
       const planName = document.getElementById('ins-plan').value;
       const premium = document.getElementById('ins-premium').value;
 
-      if(!type || !company || !premium) return alert("กรุณาเลือกประเภท บริษัท แผน และระบุเบี้ยประกันให้ครบถ้วน");
+      if(!type || !company || !premium) return alert("กรุณาเลือกประเภท บริษัท แผน ประเภทรถ และระบุเบี้ยประกันให้ครบถ้วน");
 
       fetch(GAS_API_URL, {
         method: 'POST',
