@@ -398,7 +398,6 @@
       
       const matchedPlans = availablePlansCache.filter(p => p.plan === selectedPlanName);
       
-      // ดึงรายการทุนประกันทั้งหมดของแผนนี้ (รวมทุกแถวในชีตที่มีชื่อแผนนี้)
       let sumList = [];
       matchedPlans.forEach(p => {
         if (p.sumInsuredList && p.sumInsuredList.length > 0) {
@@ -414,8 +413,10 @@
 
       if (sumList.length > 0) {
         if (sumList.length === 1) {
+          // ถ้ามีทุนเดียว ให้แสดงและใส่ onchange/oninput เผื่อเรียกคำนวณเบี้ย
           container.innerHTML = `<input type="text" id="ins-sum-insured" value="${sumList[0]}" readonly class="border p-2 rounded w-full bg-gray-100">`;
         } else {
+          // 🟢 เพิ่ม onchange="calculateFinalPremium()" เพื่อให้เวลาเปลี่ยนทุนประกันแล้วเบี้ยวิ่งตามทันที
           let html = '<select id="ins-sum-insured" onchange="calculateFinalPremium()" class="border p-2 rounded w-full bg-white">';
           html += '<option value="">-- เลือกทุนประกัน --</option>';
           sumList.forEach(sum => {
@@ -425,7 +426,7 @@
           container.innerHTML = html;
         }
       } else {
-        // หากในชีตไม่มีข้อมูลทุนประกันเลยจริงๆ ถึงจะปล่อยให้ช่องนี้กลายเป็นช่องว่างพิมพ์กรอกเองได้
+        // ถ้าไม่มีข้อมูลทุนในชีต เปิดให้พิมพ์กรอกเองและผูกฟังก์ชันคำนวณเบี้ยทันทีที่พิมพ์
         container.innerHTML = `<input type="text" id="ins-sum-insured" placeholder="กรอกทุนประกัน..." oninput="calculateFinalPremium()" class="border p-2 rounded w-full bg-white">`;
       }
 
@@ -455,16 +456,32 @@
       const sumInsuredEl = document.getElementById('ins-sum-insured');
       const sumInsured = sumInsuredEl ? sumInsuredEl.value : "";
 
-      // เบี้ยประกันจะซ่อนไว้จนกว่าจะเลือกเงื่อนไขครบถ้วน (แผน, ทุน, ประเภทรถ)
+      // เบี้ยประกันจะแสดงก็ต่อเมื่อเลือกแผน ทุน และประเภทรถครบถ้วนแล้วเท่านั้น
       if (!carType || !sumInsured) {
         document.getElementById('ins-premium').value = '';
         return;
       }
 
+      // 🟢 ค้นหาเรกคอร์ดใน Cache ที่ตรงกับ แผน, ทุน, และประเภทรถ/พื้นที่ ที่ผู้ใช้เลือกจริง
       const matched = availablePlansCache.find(p => {
         if (p.plan !== selectedPlanName) return false;
-        if (sumInsured && p.sumInsuredList && p.sumInsuredList.length > 0 && !p.sumInsuredList.includes(String(sumInsured))) return false;
-        if (sumInsured && p.sumInsured && String(p.sumInsured) !== String(sumInsured) && (!p.sumInsuredList || p.sumInsuredList.length === 0)) return false;
+        
+        // เช็คทุนประกัน
+        if (sumInsured) {
+          let hasSumMatch = false;
+          if (p.sumInsuredList && p.sumInsuredList.includes(String(sumInsured))) hasSumMatch = true;
+          if (p.sumInsured && String(p.sumInsured) === String(sumInsured)) hasSumMatch = true;
+          if (!hasSumMatch) return false;
+        }
+
+        // เช็คประเภทรถ (CarType)
+        if (carType && p.carType) {
+          let cleanRowCar = String(p.carType).replace(/รถ/g, '').replace(/\s+/g, '').toLowerCase();
+          let cleanInputCar = String(carType).replace(/รถ/g, '').replace(/\s+/g, '').toLowerCase();
+          if (!cleanRowCar.includes(cleanInputCar) && !cleanInputCar.includes(cleanRowCar) && !p.carType.includes('ทุกประเภท')) {
+            return false;
+          }
+        }
         return true;
       });
 
