@@ -94,7 +94,10 @@
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-        <input type="text" id="ins-sum-insured" placeholder="ทุนประกัน (พิมพ์กรอกเองได้)" class="border p-2 rounded w-full bg-white">
+        <!-- 🟢 ช่องทุนประกันรองรับทั้งแบบเลือกจากตัวเลือกและพิมพ์กรอกเอง -->
+        <div id="sum-insured-container">
+          <input type="text" id="ins-sum-insured" placeholder="ทุนประกัน (พิมพ์กรอกเองได้)" class="border p-2 rounded w-full bg-white">
+        </div>
         <input type="number" id="ins-premium" placeholder="เบี้ยรวมสุทธิ (บาท)" class="border p-2 rounded w-full bg-yellow-50">
       </div>
 
