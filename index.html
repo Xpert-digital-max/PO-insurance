@@ -413,10 +413,9 @@
 
       if (sumList.length > 0) {
         if (sumList.length === 1) {
-          // ถ้ามีทุนเดียว ให้แสดงและใส่ onchange/oninput เผื่อเรียกคำนวณเบี้ย
           container.innerHTML = `<input type="text" id="ins-sum-insured" value="${sumList[0]}" readonly class="border p-2 rounded w-full bg-gray-100">`;
         } else {
-          // 🟢 เพิ่ม onchange="calculateFinalPremium()" เพื่อให้เวลาเปลี่ยนทุนประกันแล้วเบี้ยวิ่งตามทันที
+          // 🟢 ผูก onchange="calculateFinalPremium()" เพื่อให้พอเปลี่ยนทุนปุ๊บ เบี้ยเปลี่ยนตามปั๊บ
           let html = '<select id="ins-sum-insured" onchange="calculateFinalPremium()" class="border p-2 rounded w-full bg-white">';
           html += '<option value="">-- เลือกทุนประกัน --</option>';
           sumList.forEach(sum => {
@@ -426,7 +425,6 @@
           container.innerHTML = html;
         }
       } else {
-        // ถ้าไม่มีข้อมูลทุนในชีต เปิดให้พิมพ์กรอกเองและผูกฟังก์ชันคำนวณเบี้ยทันทีที่พิมพ์
         container.innerHTML = `<input type="text" id="ins-sum-insured" placeholder="กรอกทุนประกัน..." oninput="calculateFinalPremium()" class="border p-2 rounded w-full bg-white">`;
       }
 
@@ -446,6 +444,7 @@
       calculateFinalPremium();
     }
 
+    // 🟢 ฟังก์ชันคำนวณเบี้ยใหม่แบบแม่นยำ รองรับทุกการเปลี่ยนแปลงของ ทุน, ประเภทรถ และพื้นที่
     function calculateFinalPremium() {
       const selectedPlanName = document.getElementById('ins-plan').value;
       if(!selectedPlanName) return;
@@ -456,23 +455,26 @@
       const sumInsuredEl = document.getElementById('ins-sum-insured');
       const sumInsured = sumInsuredEl ? sumInsuredEl.value : "";
 
-      // เบี้ยประกันจะแสดงก็ต่อเมื่อเลือกแผน ทุน และประเภทรถครบถ้วนแล้วเท่านั้น
-      if (!carType || !sumInsured) {
+      // ถ้ายังเลือกทุนหรือประเภทรถไม่ครบ ให้เบี้ยว่างไว้
+      if (!sumInsured || !carType) {
         document.getElementById('ins-premium').value = '';
         return;
       }
 
-      // 🟢 ค้นหาเรกคอร์ดใน Cache ที่ตรงกับ แผน, ทุน, และประเภทรถ/พื้นที่ ที่ผู้ใช้เลือกจริง
+      // ค้นหารายการที่ตรงกันใน Cache โดยเช็คทั้ง แผน, ทุนประกัน และประเภทรถ
       const matched = availablePlansCache.find(p => {
         if (p.plan !== selectedPlanName) return false;
         
         // เช็คทุนประกัน
+        let matchSum = false;
         if (sumInsured) {
-          let hasSumMatch = false;
-          if (p.sumInsuredList && p.sumInsuredList.includes(String(sumInsured))) hasSumMatch = true;
-          if (p.sumInsured && String(p.sumInsured) === String(sumInsured)) hasSumMatch = true;
-          if (!hasSumMatch) return false;
+          if (p.sumInsuredList && p.sumInsuredList.includes(String(sumInsured))) matchSum = true;
+          if (p.sumInsured && String(p.sumInsured) === String(sumInsured)) matchSum = true;
+          if (!matchSum && (!p.sumInsuredList || p.sumInsuredList.length === 0) && !p.sumInsured) matchSum = true; // กรณีไม่มีทุนระบุ
+        } else {
+          matchSum = true;
         }
+        if (!matchSum) return false;
 
         // เช็คประเภทรถ (CarType)
         if (carType && p.carType) {
@@ -482,6 +484,16 @@
             return false;
           }
         }
+
+        // เช็คพื้นที่ (Location) ถ้ามีระบุ
+        if (location && p.location && p.location !== "-" && p.location !== "") {
+          let cleanRowLoc = String(p.location).trim().toLowerCase();
+          let cleanInputLoc = String(location).trim().toLowerCase();
+          if (!cleanRowLoc.includes(cleanInputLoc) && !cleanInputLoc.includes('ทุก')) {
+            return false;
+          }
+        }
+
         return true;
       });
 
