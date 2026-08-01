@@ -531,11 +531,9 @@
         comparisonItems.push(item);
         renderTable();
         
-        document.getElementById('ins-plan').innerHTML = '<option value="">-- เลือกแผนประกัน --</option>';
-        document.getElementById('sum-insured-container').innerHTML = `<select id="ins-sum-insured" class="border p-2 rounded w-full bg-white text-black"><option value="">-- เลือกทุนประกัน --</option></select>`;
+        // 🟢 เอาคำสั่งเคลียร์ค่าทิ้งออก เพื่อให้ช่องตัวเลือกด้านบน (ประเภท, บริษัท, แผน, ทุน) ยังคงค้างค่าเดิมไว้ให้แก้ไขเปรียบเทียบต่อได้ทันที
+        // (เคลียร์เฉพาะช่องเบี้ยประกันสุทธิ เพื่อรอคำนวณใหม่เมื่อเปลี่ยนข้อมูล)
         document.getElementById('ins-premium').value = '';
-        updateLocationInput([]);
-        availablePlansCache = [];
       });
     }
 
